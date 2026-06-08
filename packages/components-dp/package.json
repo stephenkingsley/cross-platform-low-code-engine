@@ -13,7 +13,7 @@
     },
     "dependencies": {
         "@ant-design/cssinjs": "^2.1.0",
-        "@dragonpass/atom-ui-mobile": "file:../../../dp-design/packages/atom-ui-mobile",
+        "@dragonpass/atom-ui-mobile": "^1.1.1-beta.25",
         "axios": "^1.8.1"
     },
     "peerDependencies": {
