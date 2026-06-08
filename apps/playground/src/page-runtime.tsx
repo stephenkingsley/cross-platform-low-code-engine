@@ -1,58 +1,30 @@
 /**
- * PageRuntime — the standalone ReactJS runtime component (deliverable #2).
+ * PageRuntime — now powered by the PUBLISHED `pandora-box-react` package.
  *
- * Give it the page JSON the builder produces (the "Page JSON"); it renders the page.
- * It bundles everything the consumer would otherwise wire by hand:
- *   • the Puck-FREE <Render> walker (from @lce/runtime-react),
- *   • the component registry (dp-design + engine primitives, by type id),
- *   • the manifest (so the walker knows which props are slots / arrays / localized text),
- *   • the dp-design provider (theme tokens + ConfigProvider locale).
- *
- * So the only thing a host app passes is `doc` (+ optional `locale`):
+ * The preview renders through the exact runtime a consumer would `npm install`:
+ * `createRuntime` pre-binds this app's dp-design registry + manifest + provider, so
+ * the bound component just takes `{ doc, locale, fallbackLocale }`. No editor, no Puck.
  *
  *     import { PageRuntime } from './page-runtime';
  *     <PageRuntime doc={pageJson} locale="zh" />
- *
- * No Puck, no editor — this is what ships in production. The React Native runtime is
- * the SAME component with a native registry (dp's RN components + the engine `.native`
- * bindings); the document JSON is identical across platforms.
  */
-import type { DocData, Manifest, Node } from '@lce/manifest';
-import { Render } from '@lce/runtime-react';
+import type { ReactNode } from 'react';
+import { createRuntime, type Manifest } from 'pandora-box-react';
 import { DpConfig, DpProvider } from '@lce/components-dp';
 import { registry, renderableManifest } from './registry';
 
-const manifest = renderableManifest as Manifest;
-
-export interface PageRuntimeProps {
-    /** The page document produced by the builder (root + content[] + zones). */
-    doc: DocData;
-    /** Active content locale — localized text resolves to this language. @default 'en' */
-    locale?: string;
-    /** Locale to fall back to when a translation is missing. @default 'en' */
-    fallbackLocale?: string;
-    /** Rendered when a `node.type` has no registered component (default: skip). */
-    fallback?: (node: Node) => React.ReactNode;
-}
-
-export function PageRuntime({
-    doc,
-    locale = 'en',
-    fallbackLocale = 'en',
-    fallback,
-}: PageRuntimeProps) {
+/** dp-design provider that also sets the active locale on DpConfig (dp's ConfigProvider). */
+function DpWrapper({ locale, children }: { locale?: string; children: ReactNode }) {
     return (
-        <DpConfig.Provider value={{ locale }}>
-            <DpProvider>
-                <Render
-                    data={doc}
-                    registry={registry}
-                    manifest={manifest}
-                    locale={locale}
-                    fallbackLocale={fallbackLocale}
-                    fallback={fallback}
-                />
-            </DpProvider>
+        <DpConfig.Provider value={{ locale: locale ?? 'en' }}>
+            <DpProvider>{children}</DpProvider>
         </DpConfig.Provider>
     );
 }
+
+export const PageRuntime = createRuntime({
+    registry,
+    manifest: renderableManifest as unknown as Manifest,
+    wrapper: DpWrapper,
+    fallbackLocale: 'en',
+});

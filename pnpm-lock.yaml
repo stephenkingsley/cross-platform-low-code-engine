@@ -45,6 +45,9 @@ importers:
       '@puckeditor/core':
         specifier: ^0.21.0
         version: 0.21.2(@floating-ui/dom@1.7.6)(@types/react-dom@18.3.7(@types/react@18.3.30))(@types/react@18.3.30)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(use-sync-external-store@1.6.0(react@18.3.1))
+      pandora-box-react:
+        specifier: ^0.1.0
+        version: 0.1.0(react@18.3.1)
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -1641,6 +1644,11 @@ packages:
 
   orderedmap@2.1.1:
     resolution: {integrity: sha512-TvAWxi0nDe1j/rtMcWcIj94+Ffe6n7zhow33h40SKxmsmozs6dz/e+EajymfoFcHd7sxNn8yHM8839uixMOV6g==}
+
+  pandora-box-react@0.1.0:
+    resolution: {integrity: sha512-v1pjYvX6U7f4dy/ioTCMhT5PjofXyEKtF+T5ZZqvRigUI3Wyngewsvz9n3BVzTVLAjZqXRDXRov5iSZbfdYhxA==}
+    peerDependencies:
+      react: '>=18'
 
   path-browserify@1.0.1:
     resolution: {integrity: sha512-b7uo2UCUOYZcnF/3ID0lulOJi/bafxa1xPe7ZPsammBSpjSWQkjNxlt635YGS2MiR9GjvuXCtz2emr3jbsz98g==}
@@ -3390,6 +3398,10 @@ snapshots:
   object-hash@3.0.0: {}
 
   orderedmap@2.1.1: {}
+
+  pandora-box-react@0.1.0(react@18.3.1):
+    dependencies:
+      react: 18.3.1
 
   path-browserify@1.0.1: {}
 
