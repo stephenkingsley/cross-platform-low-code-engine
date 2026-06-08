@@ -1,0 +1,9 @@
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "noEmit": true
+    },
+    "include": ["src"],
+    "//": "*.native.tsx are the React Native bindings — typechecked by the (future) RN build with react-native types, excluded from the web build.",
+    "exclude": ["**/*.native.tsx"]
+}
