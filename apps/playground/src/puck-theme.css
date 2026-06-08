@@ -1,0 +1,263 @@
+@import url('https://fonts.googleapis.com/css2?family=Cabin:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+
+/* ============================================================================
+   LCE editor theme — dp-design navy accent + Poppins typography, layered over
+   Puck. Imported AFTER @puckeditor/core/puck.css so these win by source order.
+   Built for non-technical (ops / marketing) users: calm, branded, friendly.
+   ========================================================================== */
+
+:root,
+.Puck,
+[class*='_Puck_'] {
+    /* Navy accent ramp replacing Puck's default azure/blue (01 dark → 12 light) */
+    --puck-color-azure-01: #050e18;
+    --puck-color-azure-02: #0a1c2b;
+    --puck-color-azure-03: #0f2a3f;
+    --puck-color-azure-04: #16415e; /* primary: buttons, links, active */
+    --puck-color-azure-05: #335f7e;
+    --puck-color-azure-06: #557f9c;
+    --puck-color-azure-07: #7c9db5;
+    --puck-color-azure-08: #a6c0d1;
+    --puck-color-azure-09: #ccdbe6;
+    --puck-color-azure-10: #e6eef3;
+    --puck-color-azure-11: #f1f6f9;
+    --puck-color-azure-12: #f8fbfd;
+    --puck-font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+[class*='_Puck_'] * {
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ---- Layout: fit the editor to the viewport so the PAGE never scrolls ------
+   Puck hardcodes height:100vh on its root, but it sits *under* our app header,
+   so that 100vh overflowed the viewport by the header's height and produced a
+   body scrollbar. Clip the outer chain and size Puck to the space left under
+   the header — scrolling then happens only inside Puck's own panels (the
+   component drawer and the canvas), never on the page itself. -------------- */
+html,
+body,
+#root {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+}
+.lce-root {
+    overflow: hidden;
+}
+.lce-root > main {
+    overflow: hidden;
+}
+.lce-root .Puck,
+.lce-root [class*='_Puck_'] {
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important; /* the outer shell never scrolls; only inner panels do */
+}
+/* Puck repeats height:100vh down its layout chain — pin each level to 100% so
+   the whole editor fits under our header and only the drawer/canvas scroll. */
+.lce-root [class*='_PuckLayout_'],
+.lce-root [class*='_PuckLayout-inner_'] {
+    height: 100% !important;
+    min-height: 0 !important;
+}
+
+/* ---- Section titles in the sidebars --------------------------------------- */
+[class*='_SidebarSection-title_'] {
+    font-size: 11px !important;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 600 !important;
+    color: var(--puck-color-grey-06) !important;
+}
+
+/* ---- Component list (drawer) → polished cards ----------------------------- */
+[class*='_DrawerItem_'] {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 3px 0 !important;
+}
+[class*='_DrawerItem_']:hover {
+    background: transparent !important;
+}
+.lce-block {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 11px;
+    border-radius: 11px;
+    background: var(--lce-card-bg, #fff);
+    border: 1px solid var(--puck-color-grey-10);
+    box-shadow: 0 1px 2px rgba(10, 35, 51, 0.04);
+    transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+    font-family: var(--puck-font-family);
+}
+.lce-block:hover {
+    border-color: var(--puck-color-azure-07);
+    box-shadow: 0 6px 16px rgba(10, 35, 51, 0.12);
+    transform: translateY(-1px);
+}
+.lce-block__chip {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    flex: none;
+}
+.lce-block__name {
+    flex: 1;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--puck-color-grey-02);
+}
+.lce-block__grip {
+    color: var(--puck-color-grey-08);
+    font-size: 13px;
+    letter-spacing: -2px;
+}
+
+/* ---- Field panel: labels + inputs ----------------------------------------- */
+[class*='_Input-label_'] {
+    font-weight: 600 !important;
+    color: var(--puck-color-grey-03) !important;
+    text-transform: none !important;
+}
+[class*='_Input-input_'],
+[class*='_Input_'] input,
+[class*='_Input_'] textarea,
+[class*='_Input_'] select {
+    border-radius: 9px !important;
+    border-color: var(--puck-color-grey-09) !important;
+    transition: border-color 0.14s ease, box-shadow 0.14s ease;
+}
+[class*='_Input-input_']:focus,
+[class*='_Input_'] input:focus,
+[class*='_Input_'] textarea:focus,
+[class*='_Input_'] select:focus {
+    border-color: var(--puck-color-azure-05) !important;
+    box-shadow: 0 0 0 3px var(--puck-color-azure-10) !important;
+    outline: none !important;
+}
+
+/* ---- Header --------------------------------------------------------------- */
+[class*='_PuckHeader_'] {
+    background: var(--puck-color-white);
+    border-bottom: 1px solid var(--puck-color-grey-10);
+}
+[class*='_PuckHeader-title_'] {
+    font-weight: 600;
+}
+
+/* ---- Primary buttons ------------------------------------------------------ */
+[class*='_Button_'] {
+    border-radius: 9px !important;
+    font-weight: 600 !important;
+}
+
+/* ---- Canvas backdrop ------------------------------------------------------ */
+[class*='_PuckCanvas_'] {
+    background: #eef1f4 !important;
+}
+
+/* ---- Thin, branded scrollbars -------------------------------------------- */
+[class*='_Puck_'] ::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+}
+[class*='_Puck_'] ::-webkit-scrollbar-thumb {
+    background: var(--puck-color-grey-09);
+    border-radius: 9px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+[class*='_Puck_'] ::-webkit-scrollbar-thumb:hover {
+    background: var(--puck-color-grey-08);
+    background-clip: content-box;
+}
+
+/* ---- Swiper slide sizing shim --------------------------------------------
+   dp-design's compiled CSS doesn't bundle antd-mobile's Swiper slide rules, so
+   the `slideSize` prop has no visual effect (slides stay full-width). antd-mobile
+   already sets a `--slide-size` CSS variable on the swiper root; we just honor it
+   here so carousels with slideSize<100 show the next card peeking — matching the
+   "What's new" reference. Proper fix: bundle antd-mobile component CSS in dp.   */
+.adm-swiper-horizontal .adm-swiper-slide {
+    width: var(--slide-size, 100%);
+    flex-shrink: 0;
+}
+/* Swiper slides need a positioning context so an Overlay (position:absolute)
+   anchors to the slide/image — this is what lets a Tag/caption sit INSIDE the
+   image. (antd-mobile's own CSS that sets this isn't bundled in dp.) */
+.adm-swiper-item,
+.adm-swiper-slide {
+    position: relative;
+}
+/* In the EDITOR, Puck wraps slot content in zero-height *positioned* DropZone divs,
+   which would trap an absolute Overlay (it anchors to the 0px wrapper, not the
+   image). Neutralise those wrappers inside a swiper slide so the Overlay anchors
+   to the slide/image — making the editor match the runtime. */
+.adm-swiper-item div:not(.lce-overlay) {
+    position: static !important;
+    height: auto !important;
+    min-height: 0 !important;
+    flex: 0 0 auto !important;
+}
+/* Inside a scrim Overlay, dp DataRow's text inherits the overlay's white colour
+   (DataRow otherwise hard-codes dark text, which is illegible over a photo). */
+.lce-overlay .aum-data-row-title,
+.lce-overlay .aum-data-row-content {
+    color: inherit !important;
+}
+/* The caption Overlay occupies the bottom of the slide, exactly where dp's Swiper
+   dots sit — hide the dots so they don't collide with the caption text. */
+.aum-swiper-indicator {
+    display: none !important;
+}
+/* Hide the scrollbar on the MediaCarousel's horizontal scroll-snap row. */
+.lce-hscroll::-webkit-scrollbar {
+    display: none;
+}
+
+/* ============================================================================
+   Dark mode — dark editor chrome, light canvas (Figma-style). Toggled via
+   data-theme="dark" on the app root (.lce-root).
+   ========================================================================== */
+[data-theme='dark'] {
+    --lce-app-bg: #0d1620;
+    --lce-bar-bg: #131e2b;
+    --lce-bar-border: #25364a;
+    --lce-bar-fg: #e6edf3;
+    --lce-stage-bg: #0b131d;
+    --lce-seg-bg: #1b2a3a;
+    --lce-seg-active-bg: #2b3f57;
+    --lce-card-bg: #16212e;
+}
+[data-theme='dark'] [class*='_Puck_'] {
+    --puck-color-white: #131e2b;
+    --puck-color-black: #ffffff;
+    --puck-color-grey-01: #f4f7fa;
+    --puck-color-grey-02: #e2e8f0;
+    --puck-color-grey-03: #cbd5e1;
+    --puck-color-grey-04: #aab8c8;
+    --puck-color-grey-05: #8b9bae;
+    --puck-color-grey-06: #728699;
+    --puck-color-grey-07: #5a6b7e;
+    --puck-color-grey-08: #45566a;
+    --puck-color-grey-09: #36465a;
+    --puck-color-grey-10: #29384b;
+    --puck-color-grey-11: #1d2a3a;
+    --puck-color-grey-12: #131e2b;
+    /* lift the navy accent so it stays legible on a dark shell */
+    --puck-color-azure-03: #244e6f;
+    --puck-color-azure-04: #2f6188;
+    --puck-color-azure-05: #4d80a6;
+}
+[data-theme='dark'] [class*='_PuckCanvas_'] {
+    background: var(--lce-stage-bg) !important;
+}
+

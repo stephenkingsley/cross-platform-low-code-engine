@@ -1,0 +1,30 @@
+{
+    "name": "cross-platform-low-code-engine",
+    "private": true,
+    "version": "0.0.0",
+    "description": "Cross-platform (React / React Native) low-code visual builder on top of Puck, driven by the dp-design component library.",
+    "packageManager": "pnpm@10.33.0",
+    "engines": {
+        "node": ">=20"
+    },
+    "scripts": {
+        "build": "turbo build",
+        "dev": "turbo dev",
+        "lint": "turbo lint",
+        "typecheck": "turbo typecheck",
+        "extract": "pnpm --filter @lce/extractor run extract",
+        "playground": "pnpm --filter @lce/playground run dev"
+    },
+    "devDependencies": {
+        "@types/node": "^22.14.0",
+        "prettier": "^3.5.1",
+        "turbo": "^2.9.16",
+        "typescript": "^5.7.3"
+    },
+    "pnpm": {
+        "overrides": {
+            "@dragonpass/atom-ui-icons": "file:../dp-design/packages/atom-ui-icons",
+            "@dragonpass/atom-ui-theme": "file:../dp-design/packages/atom-ui-theme"
+        }
+    }
+}
