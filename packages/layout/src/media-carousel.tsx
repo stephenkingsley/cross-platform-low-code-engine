@@ -4,6 +4,10 @@ import { MediaCaption, type MediaCaptionProps } from './media-caption';
 export interface MediaCarouselItem extends MediaCaptionProps {
     /** Card image URL. */
     src?: string;
+    /** Per-card declarative click action (configured in the builder). */
+    action?: { type: string; [key: string]: unknown };
+    /** Click handler — injected by the runtime from `action` (not a builder field). */
+    onClick?: () => void;
 }
 
 export interface MediaCarouselProps {
@@ -56,6 +60,7 @@ export function MediaCarousel({
             {items.map((item, i) => (
                 <div
                     key={i}
+                    onClick={item.onClick}
                     style={{
                         position: 'relative',
                         flex: `0 0 ${cardWidth}%`,
@@ -63,6 +68,7 @@ export function MediaCarousel({
                         borderRadius: 8,
                         overflow: 'hidden',
                         height,
+                        cursor: item.onClick ? 'pointer' : undefined,
                     }}
                 >
                     <img

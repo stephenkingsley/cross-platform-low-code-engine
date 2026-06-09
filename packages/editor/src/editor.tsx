@@ -1,5 +1,5 @@
 import { useMemo, type ComponentType, type ReactNode } from 'react';
-import { Puck, type Data } from '@puckeditor/core';
+import { Puck, type Data, type Fields } from '@puckeditor/core';
 import type { Manifest } from '@lce/manifest';
 import { buildPuckConfig, type BuildOptions, type ComponentRegistry } from './build-config';
 
@@ -29,6 +29,12 @@ export interface EditorProps {
     fallbackLocale?: string;
     /** Locales to author. When more than one, text fields become per-locale inputs. */
     locales?: string[];
+    /** Host-provided image picker (e.g. Contentful media browser) for image fields. */
+    assetPicker?: () => Promise<unknown | null>;
+    /** Extra fields for Puck's root "PAGE" panel (they edit `data.root.props`). */
+    rootFields?: Fields;
+    /** Heading for the root "PAGE" panel (defaults to "Page"). */
+    rootLabel?: string;
 }
 
 /** Thin wrapper that turns a manifest + registry into a ready-to-use Puck editor. */
@@ -45,6 +51,9 @@ export function Editor({
     locale,
     fallbackLocale,
     locales,
+    assetPicker,
+    rootFields,
+    rootLabel,
 }: EditorProps) {
     const config = useMemo(
         () =>
@@ -54,8 +63,11 @@ export function Editor({
                 locale,
                 fallbackLocale,
                 locales,
+                assetPicker,
+                rootFields,
+                rootLabel,
             }),
-        [manifest, registry, canvasWrapper, categories, locale, fallbackLocale, locales],
+        [manifest, registry, canvasWrapper, categories, locale, fallbackLocale, locales, assetPicker, rootFields, rootLabel],
     );
     return (
         <Puck

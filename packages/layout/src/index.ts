@@ -6,3 +6,5 @@ export * from './overlay';
 export * from './typography';
 export * from './media-caption';
 export * from './media-carousel';
+export * from './hero-overview';
+export * from './whats-new';

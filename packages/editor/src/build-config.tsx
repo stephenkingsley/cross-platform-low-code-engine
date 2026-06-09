@@ -1,7 +1,7 @@
 import { Component, createElement, type ComponentType, type ReactNode } from 'react';
 import type { Config, Field, Fields } from '@puckeditor/core';
-import { resolveLocalized, type ComponentManifest, type ManifestField, type Manifest } from '@lce/manifest';
-import { ColorField, ImageField, LocalizedTextField } from './custom-fields';
+import { resolveLocalized, resolveMedia, type Action, type ComponentManifest, type ManifestField, type Manifest } from '@lce/manifest';
+import { ActionField, ColorField, ImageField, LocalizedTextField } from './custom-fields';
 
 /** Keeps one misbehaving component from crashing the whole editor canvas. */
 class Boundary extends Component<{ name: string; children?: ReactNode }, { failed: boolean }> {
@@ -48,10 +48,20 @@ export interface BuildOptions {
     fallbackLocale?: string;
     /** Locales to author. When more than one, text fields become per-locale inputs. */
     locales?: string[];
+    /** Optional host-provided image picker (e.g. Contentful) injected into image fields. */
+    assetPicker?: () => Promise<unknown | null>;
+    /** Extra fields shown in Puck's root "PAGE" panel (they edit `data.root.props`). */
+    rootFields?: Fields;
+    /** Heading for the root "PAGE" panel (defaults to Puck's "Page"). */
+    rootLabel?: string;
 }
 
 /** Map one manifest field to its Puck field config. */
-function toPuckField(field: ManifestField, locales?: string[]): Field {
+function toPuckField(
+    field: ManifestField,
+    locales?: string[],
+    assetPicker?: () => Promise<unknown | null>,
+): Field {
     const d = field.field;
     const i18n = !!locales && locales.length > 1;
     switch (d.kind) {
@@ -91,12 +101,23 @@ function toPuckField(field: ManifestField, locales?: string[]): Field {
             return {
                 type: 'custom',
                 label: field.label,
-                render: ({ onChange, value }: { onChange: (v: unknown) => void; value?: string }) =>
-                    createElement(ImageField, { value, onChange, label: field.label }),
+                render: ({ onChange, value }: { onChange: (v: unknown) => void; value?: unknown }) =>
+                    createElement(ImageField, { value, onChange, label: field.label, assetPicker }),
+            } as Field;
+        case 'action':
+            return {
+                type: 'custom',
+                label: field.label,
+                render: ({ onChange, value }: { onChange: (v: unknown) => void; value?: unknown }) =>
+                    createElement(ActionField, {
+                        value: value as Action | undefined,
+                        onChange: onChange as (v: Action | undefined) => void,
+                        label: field.label,
+                    }),
             } as Field;
         case 'array': {
             const arrayFields: Fields = {};
-            for (const itf of d.itemFields) arrayFields[itf.name] = toPuckField(itf, locales);
+            for (const itf of d.itemFields) arrayFields[itf.name] = toPuckField(itf, locales, assetPicker);
             const defaultItemProps: Record<string, unknown> = {};
             for (const itf of d.itemFields) {
                 if (itf.field.kind === 'slot') defaultItemProps[itf.name] = [];
@@ -189,6 +210,9 @@ function resolveProp(
     if (kind === 'text' || kind === 'textarea') {
         return resolveLocalized(value, locale, fallbackLocale);
     }
+    if (kind === 'image') {
+        return resolveMedia(value);
+    }
     if (kind === 'slot') {
         return typeof value === 'function' ? createElement(value as ComponentType<any>) : value;
     }
@@ -202,6 +226,10 @@ function resolveProp(
                     row[k] = createElement(item[k]);
                 } else if (itf.field.kind === 'text' || itf.field.kind === 'textarea') {
                     row[k] = resolveLocalized(item?.[k], locale, fallbackLocale);
+                } else if (itf.field.kind === 'image') {
+                    row[k] = resolveMedia(item?.[k]);
+                } else if (itf.field.kind === 'action') {
+                    delete row[k]; // editor previews layout, not per-card clicks
                 }
             }
             return row;
@@ -213,7 +241,7 @@ function resolveProp(
 function buildComponentConfig(c: ComponentManifest, registry: ComponentRegistry, opts: BuildOptions) {
     const Comp = registry[c.name];
     const fields: Fields = {};
-    for (const f of c.fields) fields[f.name] = toPuckField(f, opts.locales);
+    for (const f of c.fields) fields[f.name] = toPuckField(f, opts.locales, opts.assetPicker);
 
     return {
         label: c.name,
@@ -223,6 +251,9 @@ function buildComponentConfig(c: ComponentManifest, registry: ComponentRegistry,
             if (!Comp) return null;
             const finalProps: Record<string, unknown> = {};
             for (const f of c.fields) {
+                // The editor previews layout, not clicks — Puck owns canvas selection, so we
+                // don't wire `action` to onClick here (it's configured in the right panel).
+                if (f.field.kind === 'action') continue;
                 finalProps[f.name] = resolveProp(f, props[f.name], opts.locale, opts.fallbackLocale);
             }
             return createElement(Boundary, { name: c.name }, createElement(Comp, finalProps));
@@ -249,12 +280,13 @@ export function buildPuckConfig(
 
     const config: Record<string, unknown> = { components };
     if (options.categories) config.categories = options.categories;
+    const root: Record<string, unknown> = {};
     if (options.rootRender) {
         const Root = options.rootRender;
-        config.root = {
-            render: ({ children }: { children?: ReactNode }) =>
-                createElement(Root, null, children),
-        };
+        root.render = ({ children }: { children?: ReactNode }) => createElement(Root, null, children);
     }
+    if (options.rootFields) root.fields = options.rootFields;
+    if (options.rootLabel) root.label = options.rootLabel;
+    if (Object.keys(root).length > 0) config.root = root;
     return config as Config;
 }

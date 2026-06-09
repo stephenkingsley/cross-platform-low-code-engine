@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { resolveMedia, type Action } from '@lce/manifest';
 
 const labelStyle: CSSProperties = {
     fontSize: 13,
@@ -123,15 +124,44 @@ export function ColorField({ value, onChange, label }: FieldProps) {
     );
 }
 
-/** Image preview + URL input. Auto-applied to `src` / image-like props. */
-export function ImageField({ value, onChange, label }: FieldProps) {
+const pickBtnStyle: CSSProperties = {
+    height: 34,
+    borderRadius: 8,
+    border: '1px solid var(--puck-color-azure-05, #2680eb)',
+    background: 'var(--puck-color-azure-05, #2680eb)',
+    color: '#fff',
+    fontFamily: 'inherit',
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: 'pointer',
+};
+
+interface ImageFieldProps {
+    /** A plain URL string, or a `{ $media }` reference. */
+    value?: unknown;
+    onChange: (v: unknown) => void;
+    label?: string;
+    /** Optional host-provided picker (e.g. Contentful) → returns the value to store. */
+    assetPicker?: () => Promise<unknown | null>;
+}
+
+/**
+ * Image preview + URL input, plus an optional "pick from CMS" button.
+ *
+ * The value can be a plain URL string OR a hybrid `{ $media }` reference; the preview always
+ * shows the resolved snapshot URL. When `assetPicker` is supplied (e.g. the Contentful
+ * Entry-Editor app passes the native media browser), picking stores whatever it returns.
+ */
+export function ImageField({ value, onChange, label, assetPicker }: ImageFieldProps) {
+    const url = (resolveMedia(value) as string) || '';
+    const isRef = value != null && typeof value === 'object';
     return (
         <div style={{ fontFamily: 'inherit' }}>
             {label ? <div style={labelStyle}>{label}</div> : null}
             <div style={{ display: 'grid', gap: 8 }}>
-                {value ? (
+                {url ? (
                     <img
-                        src={value}
+                        src={url}
                         alt=""
                         style={{
                             width: '100%',
@@ -156,13 +186,94 @@ export function ImageField({ value, onChange, label }: FieldProps) {
                         No image yet
                     </div>
                 )}
+                {assetPicker ? (
+                    <button
+                        type="button"
+                        style={pickBtnStyle}
+                        onClick={async () => {
+                            const v = await assetPicker();
+                            if (v != null) onChange(v);
+                        }}
+                    >
+                        ＋ Pick from Contentful
+                    </button>
+                ) : null}
+                {isRef ? (
+                    <div style={{ fontSize: 11, color: 'var(--puck-color-grey-06, #94a3b8)' }}>
+                        Linked CMS asset · snapshot URL below
+                    </div>
+                ) : null}
                 <input
                     type="text"
-                    value={value ?? ''}
+                    value={isRef ? url : ((value as string) ?? '')}
                     placeholder="Paste image URL…"
                     onChange={(e) => onChange(e.target.value)}
                     style={inputStyle}
                 />
+            </div>
+        </div>
+    );
+}
+
+interface ActionFieldProps {
+    value?: Action;
+    onChange: (v: Action | undefined) => void;
+    label?: string;
+}
+
+const selectStyle: CSSProperties = { ...inputStyle, cursor: 'pointer' };
+
+/** Configure a declarative click action (navigate / emit event). Stored as data in the doc. */
+export function ActionField({ value, onChange, label }: ActionFieldProps) {
+    const type = value?.type ?? 'none';
+    return (
+        <div style={{ fontFamily: 'inherit' }}>
+            {label ? <div style={labelStyle}>{label}</div> : null}
+            <div style={{ display: 'grid', gap: 6 }}>
+                <select
+                    value={type}
+                    style={selectStyle}
+                    onChange={(e) => {
+                        const t = e.target.value;
+                        if (t === 'navigate')
+                            onChange({ type: 'navigate', href: value?.type === 'navigate' ? value.href : '', target: '_self' });
+                        else if (t === 'event')
+                            onChange({ type: 'event', name: value?.type === 'event' ? value.name : '' });
+                        else onChange(undefined);
+                    }}
+                >
+                    <option value="none">None</option>
+                    <option value="navigate">Navigate (URL / route)</option>
+                    <option value="event">Emit event</option>
+                </select>
+                {value?.type === 'navigate' ? (
+                    <>
+                        <input
+                            type="text"
+                            value={value.href}
+                            placeholder="/path or https://…"
+                            style={inputStyle}
+                            onChange={(e) => onChange({ ...value, href: e.target.value })}
+                        />
+                        <select
+                            value={value.target ?? '_self'}
+                            style={selectStyle}
+                            onChange={(e) => onChange({ ...value, target: e.target.value as '_self' | '_blank' })}
+                        >
+                            <option value="_self">Same tab</option>
+                            <option value="_blank">New tab</option>
+                        </select>
+                    </>
+                ) : null}
+                {value?.type === 'event' ? (
+                    <input
+                        type="text"
+                        value={value.name}
+                        placeholder="event name (e.g. addToCart)"
+                        style={inputStyle}
+                        onChange={(e) => onChange({ ...value, name: e.target.value })}
+                    />
+                ) : null}
             </div>
         </div>
     );

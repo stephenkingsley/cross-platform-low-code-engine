@@ -1,7 +1,10 @@
 import { Component, createElement, Fragment, type ComponentType, type ReactNode } from 'react';
 import {
     findComponent,
+    isAction,
     resolveLocalized,
+    resolveMedia,
+    type Action,
     type DocData,
     type ManifestField,
     type Manifest,
@@ -35,9 +38,11 @@ export interface RenderProps {
     fallbackLocale?: string;
     /** Rendered when a `node.type` is missing from the registry. */
     fallback?: (node: Node) => ReactNode;
+    /** Host dispatcher for a component's declarative `action` (click) — navigate, emit, … */
+    onAction?: (action: Action, info?: { node?: Node }) => void;
 }
 
-type Ctx = Pick<RenderProps, 'registry' | 'manifest' | 'fallback' | 'locale' | 'fallbackLocale'>;
+type Ctx = Pick<RenderProps, 'registry' | 'manifest' | 'fallback' | 'locale' | 'fallbackLocale' | 'onAction'>;
 
 /**
  * Turn a saved prop value into the real React prop: recurse into slots/arrays, and
@@ -48,6 +53,9 @@ function resolveValue(field: ManifestField | undefined, value: unknown, ctx: Ctx
     const kind = field.field.kind;
     if (kind === 'text' || kind === 'textarea') {
         return resolveLocalized(value, ctx.locale, ctx.fallbackLocale);
+    }
+    if (kind === 'image') {
+        return resolveMedia(value);
     }
     if (kind === 'slot' && Array.isArray(value)) {
         return renderList(value as Node[], ctx);
@@ -62,6 +70,15 @@ function resolveValue(field: ManifestField | undefined, value: unknown, ctx: Ctx
                     row[itf.name] = renderList(v as Node[], ctx);
                 } else if (itf.field.kind === 'text' || itf.field.kind === 'textarea') {
                     row[itf.name] = resolveLocalized(v, ctx.locale, ctx.fallbackLocale);
+                } else if (itf.field.kind === 'image') {
+                    row[itf.name] = resolveMedia(v);
+                } else if (itf.field.kind === 'action') {
+                    // per-row action → an onClick the component (e.g. a carousel card) wires up
+                    delete row[itf.name];
+                    if (isAction(v) && ctx.onAction) {
+                        const act = v;
+                        row.onClick = () => ctx.onAction!(act);
+                    }
                 }
             }
             return row;
@@ -84,6 +101,13 @@ function renderNode(node: Node, ctx: Ctx): ReactNode {
         props[key] = resolveValue(fieldByName.get(key), value, ctx);
     }
 
+    // a declarative `action` becomes a real onClick that calls the host dispatcher
+    const action = props.action;
+    delete props.action;
+    if (isAction(action) && ctx.onAction) {
+        props.onClick = () => ctx.onAction!(action, { node });
+    }
+
     return createElement(
         Boundary,
         { key: id, name: node.type },
@@ -102,6 +126,6 @@ function renderList(nodes: Node[], ctx: Ctx): ReactNode {
  * Puck. The React Native runtime will be the same walk over the same JSON with a native
  * component registry.
  */
-export function Render({ data, registry, manifest, fallback, locale, fallbackLocale }: RenderProps) {
-    return renderList(data.content, { registry, manifest, fallback, locale, fallbackLocale });
+export function Render({ data, registry, manifest, fallback, locale, fallbackLocale, onAction }: RenderProps) {
+    return renderList(data.content, { registry, manifest, fallback, locale, fallbackLocale, onAction });
 }

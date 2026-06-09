@@ -1,14 +1,22 @@
 {
-    "name": "@lce/playground",
+    "name": "@lce/contentful-app",
     "version": "0.0.0",
     "private": true,
     "type": "module",
     "scripts": {
         "dev": "vite",
+        "start": "vite",
         "build": "vite build",
-        "preview": "vite preview"
+        "preview": "vite preview",
+        "typecheck": "tsc --noEmit",
+        "create-app-definition": "contentful-app-scripts create-app-definition",
+        "upload": "contentful-app-scripts upload --bundle-dir ./dist"
     },
     "dependencies": {
+        "@contentful/app-sdk": "4.25.0",
+        "@contentful/f36-components": "4.65.4",
+        "@contentful/f36-tokens": "4.0.2",
+        "@contentful/react-apps-toolkit": "1.2.16",
         "@dragonpass/atom-ui-mobile": "file:../../../dp-design/packages/atom-ui-mobile",
         "@lce/components-dp": "workspace:*",
         "@lce/editor": "workspace:*",
@@ -16,11 +24,12 @@
         "@lce/manifest": "workspace:*",
         "@lce/runtime-react": "workspace:*",
         "@puckeditor/core": "^0.21.0",
-        "pandora-box-react": "^0.1.0",
+        "emotion": "10.0.27",
         "react": "^18.3.1",
         "react-dom": "^18.3.1"
     },
     "devDependencies": {
+        "@contentful/app-scripts": "^2.3.0",
         "@types/react": "^18.3.12",
         "@types/react-dom": "^18.3.1",
         "@vitejs/plugin-react": "^4.3.4",

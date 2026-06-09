@@ -158,6 +158,10 @@ function classifyItemProp(prop: TsSymbol, loc: Node): ManifestField | null {
     if (type.getCallSignatures().length > 0) return null;
     const required = sig ? !sig.hasQuestionToken() : false;
     const { description } = sig ? readJsDoc(sig) : {};
+    if (name === 'action') {
+        // A per-row declarative click action (e.g. a carousel card's link).
+        return { name, label: 'On click', description, field: { kind: 'action' }, required };
+    }
     if (REACT_NODE_RE.test(declaredText) || REACT_NODE_RE.test(type.getText())) {
         return { name, label: humanize(name), description, field: { kind: 'slot' }, required };
     }
@@ -281,6 +285,11 @@ function extractComponent(
     for (const prop of decl.getType().getProperties()) {
         const field = classify(prop, target, decl);
         if (field) fields.push(field);
+    }
+    if (target.action) {
+        // Synthetic declarative "on click" — the component's real handler is a function
+        // (stripped from the manifest); this is the data the runtime wires to onClick.
+        fields.push({ name: 'action', label: 'On click', field: { kind: 'action' }, required: false });
     }
 
     return {
