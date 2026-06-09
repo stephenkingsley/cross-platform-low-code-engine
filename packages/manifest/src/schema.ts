@@ -73,6 +73,12 @@ export function documentJsonSchema(manifest: Manifest, opts: SchemaOptions = {})
                     items: { type: 'object', properties, additionalProperties: true },
                 };
             }
+            case 'action':
+                return {
+                    type: 'object',
+                    title: `${f.label} (navigate / event action)`,
+                    additionalProperties: true,
+                };
         }
     };
 

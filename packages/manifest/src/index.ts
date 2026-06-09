@@ -33,6 +33,7 @@ export type FieldDescriptor =
     | { kind: 'slot' }
     | { kind: 'color' }
     | { kind: 'image' }
+    | { kind: 'action' }
     | { kind: 'array'; itemFields: ManifestField[]; itemLabel?: string };
 
 /** One configurable prop of a component. */
@@ -116,3 +117,9 @@ export * from './schema';
 
 // ---- i18n (localized text content) ------------------------------------------
 export * from './i18n';
+
+// ---- media references (image assets, $media) --------------------------------
+export * from './media';
+
+// ---- actions (declarative click behaviour) ----------------------------------
+export * from './action';

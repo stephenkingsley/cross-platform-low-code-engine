@@ -20,5 +20,11 @@
         "prettier": "^3.5.1",
         "turbo": "^2.9.16",
         "typescript": "^5.7.3"
+    },
+    "pnpm": {
+        "overrides": {
+            "@dragonpass/atom-ui-icons": "file:../dp-design/packages/atom-ui-icons",
+            "@dragonpass/atom-ui-theme": "file:../dp-design/packages/atom-ui-theme"
+        }
     }
 }

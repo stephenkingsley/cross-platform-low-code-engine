@@ -73,6 +73,9 @@ const phoneStyle: CSSProperties = {
     // canvas only scrolls — when the content genuinely exceeds the viewport.
     background: '#fff',
     borderRadius: 22,
+    // Clip full-bleed content (e.g. a hero image) to the card's rounded corners, so its
+    // square top corners don't poke out over the rounding.
+    overflow: 'hidden',
     boxShadow: '0 12px 40px rgba(10, 35, 51, 0.16)',
 };
 
@@ -124,7 +127,7 @@ export function DpCanvas({ children }: { children: ReactNode }) {
 }
 
 /** Registry fragment shared by the editor + runtime, under the manifest's type ids. */
-export const dpRegistry: Record<string, ComponentType<any>> = {
+export const dpRegistry = {
     Text,
     Image,
     Button,
@@ -146,4 +149,6 @@ export const dpRegistry: Record<string, ComponentType<any>> = {
     RadioButtonGroup,
     CheckboxButtonGroup,
     Swiper,
-};
+    // `as unknown as` bridges a dual @types/react mismatch: dp-design's components declare a
+    // `ReactNode` return that includes `bigint` (newer React types) than the engine's @types/react.
+} as unknown as Record<string, ComponentType<any>>;

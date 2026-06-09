@@ -44,6 +44,8 @@ export interface FlexProps {
     wrap?: boolean;
     /** Nested content. */
     children?: ReactNode;
+    /** Click handler — wired by the runtime from a configured `action` (not a builder field). */
+    onClick?: () => void;
 }
 
 const JUSTIFY: Record<
@@ -109,5 +111,10 @@ export function resolveFlexStyle(props: FlexProps): FlexStyle {
  */
 export function Flex(props: FlexProps) {
     const style: CSSProperties = resolveFlexStyle(props);
-    return <div style={style}>{props.children}</div>;
+    if (props.onClick) style.cursor = 'pointer';
+    return (
+        <div style={style} onClick={props.onClick}>
+            {props.children}
+        </div>
+    );
 }
