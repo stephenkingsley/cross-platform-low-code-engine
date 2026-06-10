@@ -30,6 +30,16 @@ export const FONT_SIZE: Record<SizeToken, number> = {
     xl: 24,
 };
 
+export type HeadingSizeToken = 'sm' | 'md' | 'lg' | 'xl';
+
+/** Section-heading font-size presets (list templates). `lg` = dp's title size. */
+export const HEADING_SIZE: Record<HeadingSizeToken, number> = {
+    sm: 14,
+    md: 16,
+    lg: 18,
+    xl: 22,
+};
+
 export type WeightToken = 'regular' | 'medium' | 'bold';
 
 /** Font-weight scale. */

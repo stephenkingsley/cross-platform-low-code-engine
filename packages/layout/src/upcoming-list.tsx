@@ -1,4 +1,6 @@
 import type { CSSProperties } from 'react';
+import { FONT_FAMILY } from './typography';
+import { FONT_WEIGHT, HEADING_SIZE, type HeadingSizeToken, type WeightToken } from './tokens';
 
 export interface UpcomingItem {
     /**
@@ -41,6 +43,21 @@ export interface UpcomingListProps {
      */
     heading?: string;
     /**
+     * Heading size preset (sm 14 / md 16 / lg 18 / xl 22).
+     * @default 'lg'
+     */
+    headingSize?: HeadingSizeToken;
+    /**
+     * Heading weight preset (regular 400 / medium 500 / bold 700).
+     * @default 'bold'
+     */
+    headingWeight?: WeightToken;
+    /**
+     * Weight of each card's title (regular 400 / medium 500 / bold 700).
+     * @default 'regular'
+     */
+    itemTitleWeight?: WeightToken;
+    /**
      * "View all" link text (leave empty to hide it).
      * @default "View all"
      */
@@ -63,6 +80,9 @@ const rowStyle: CSSProperties = {
     overflowX: 'auto',
     padding: '0 16px 6px',
     scrollSnapType: 'x mandatory',
+    // Without this, the mandatory snap aligns card 1 to the scrollport edge on first
+    // layout — auto-scrolling by exactly the padding-left and "eating" the margin.
+    scrollPaddingLeft: 16,
     scrollbarWidth: 'none',
 };
 const cardStyle: CSSProperties = {
@@ -99,6 +119,9 @@ const CalIcon = () => (
  */
 export function UpcomingList({
     heading = 'Upcoming',
+    headingSize = 'lg',
+    headingWeight = 'bold',
+    itemTitleWeight = 'regular',
     viewAllText = 'View all',
     viewAllHref,
     items = [
@@ -112,10 +135,10 @@ export function UpcomingList({
     ],
 }: UpcomingListProps) {
     return (
-        <div style={{ padding: '16px 0' }}>
+        <div style={{ padding: '16px 0', fontFamily: FONT_FAMILY }}>
             <div style={{ display: 'flex', alignItems: 'center', padding: '0 16px 12px' }}>
-                <span style={{ fontSize: 18, fontWeight: 700, color: '#0A2333' }}>{heading}</span>
-                <span style={{ fontSize: 18, fontWeight: 600, color: '#AFAEAD', marginLeft: 6 }}>{items.length}</span>
+                <span style={{ fontSize: HEADING_SIZE[headingSize], fontWeight: FONT_WEIGHT[headingWeight], color: '#0A2333' }}>{heading}</span>
+                <span style={{ fontSize: HEADING_SIZE[headingSize], fontWeight: 600, color: '#AFAEAD', marginLeft: 6 }}>{items.length}</span>
                 <span style={{ flex: 1 }} />
                 {viewAllText ? (
                     <a
@@ -132,7 +155,7 @@ export function UpcomingList({
                     return (
                         <div key={i} onClick={it.onClick} style={{ ...cardStyle, cursor: it.onClick ? 'pointer' : undefined }}>
                             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                <div style={{ fontSize: 16, fontWeight: 700, color: '#0A2333' }}>{it.title}</div>
+                                <div style={{ fontSize: 16, fontWeight: FONT_WEIGHT[itemTitleWeight], color: '#0A2333' }}>{it.title}</div>
                                 {it.location ? (
                                     <div style={metaStyle}>
                                         <PinIcon />

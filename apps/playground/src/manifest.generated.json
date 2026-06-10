@@ -835,6 +835,82 @@
           "required": false
         },
         {
+          "name": "headingSize",
+          "label": "Heading Size",
+          "description": "Heading size preset (sm 14 / md 16 / lg 18 / xl 22).",
+          "field": {
+            "kind": "select",
+            "options": [
+              {
+                "label": "sm",
+                "value": "sm"
+              },
+              {
+                "label": "md",
+                "value": "md"
+              },
+              {
+                "label": "lg",
+                "value": "lg"
+              },
+              {
+                "label": "xl",
+                "value": "xl"
+              }
+            ]
+          },
+          "defaultValue": "lg",
+          "required": false
+        },
+        {
+          "name": "headingWeight",
+          "label": "Heading Weight",
+          "description": "Heading weight preset (regular 400 / medium 500 / bold 700).",
+          "field": {
+            "kind": "select",
+            "options": [
+              {
+                "label": "regular",
+                "value": "regular"
+              },
+              {
+                "label": "medium",
+                "value": "medium"
+              },
+              {
+                "label": "bold",
+                "value": "bold"
+              }
+            ]
+          },
+          "defaultValue": "bold",
+          "required": false
+        },
+        {
+          "name": "itemTitleWeight",
+          "label": "Item Title Weight",
+          "description": "Weight of each card's title (regular 400 / medium 500 / bold 700).",
+          "field": {
+            "kind": "select",
+            "options": [
+              {
+                "label": "regular",
+                "value": "regular"
+              },
+              {
+                "label": "medium",
+                "value": "medium"
+              },
+              {
+                "label": "bold",
+                "value": "bold"
+              }
+            ]
+          },
+          "defaultValue": "regular",
+          "required": false
+        },
+        {
           "name": "viewAllText",
           "label": "View All Text",
           "description": "\"View all\" link text (leave empty to hide it).",
@@ -1055,6 +1131,130 @@
             "kind": "text"
           },
           "defaultValue": "Available Services",
+          "required": false
+        },
+        {
+          "name": "headingSize",
+          "label": "Heading Size",
+          "description": "Heading size preset (sm 14 / md 16 / lg 18 / xl 22).",
+          "field": {
+            "kind": "select",
+            "options": [
+              {
+                "label": "sm",
+                "value": "sm"
+              },
+              {
+                "label": "md",
+                "value": "md"
+              },
+              {
+                "label": "lg",
+                "value": "lg"
+              },
+              {
+                "label": "xl",
+                "value": "xl"
+              }
+            ]
+          },
+          "defaultValue": "lg",
+          "required": false
+        },
+        {
+          "name": "headingWeight",
+          "label": "Heading Weight",
+          "description": "Heading weight preset (regular 400 / medium 500 / bold 700).",
+          "field": {
+            "kind": "select",
+            "options": [
+              {
+                "label": "regular",
+                "value": "regular"
+              },
+              {
+                "label": "medium",
+                "value": "medium"
+              },
+              {
+                "label": "bold",
+                "value": "bold"
+              }
+            ]
+          },
+          "defaultValue": "bold",
+          "required": false
+        },
+        {
+          "name": "itemTitleWeight",
+          "label": "Item Title Weight",
+          "description": "Weight of each card's title.",
+          "field": {
+            "kind": "select",
+            "options": [
+              {
+                "label": "regular",
+                "value": "regular"
+              },
+              {
+                "label": "medium",
+                "value": "medium"
+              },
+              {
+                "label": "bold",
+                "value": "bold"
+              }
+            ]
+          },
+          "defaultValue": "regular",
+          "required": false
+        },
+        {
+          "name": "itemPriceWeight",
+          "label": "Item Price Weight",
+          "description": "Weight of each card's price.",
+          "field": {
+            "kind": "select",
+            "options": [
+              {
+                "label": "regular",
+                "value": "regular"
+              },
+              {
+                "label": "medium",
+                "value": "medium"
+              },
+              {
+                "label": "bold",
+                "value": "bold"
+              }
+            ]
+          },
+          "defaultValue": "regular",
+          "required": false
+        },
+        {
+          "name": "itemCtaWeight",
+          "label": "Item Cta Weight",
+          "description": "Weight of each card's CTA text.",
+          "field": {
+            "kind": "select",
+            "options": [
+              {
+                "label": "regular",
+                "value": "regular"
+              },
+              {
+                "label": "medium",
+                "value": "medium"
+              },
+              {
+                "label": "bold",
+                "value": "bold"
+              }
+            ]
+          },
+          "defaultValue": "regular",
           "required": false
         },
         {

@@ -1,4 +1,6 @@
 import type { CSSProperties } from 'react';
+import { FONT_FAMILY } from './typography';
+import { FONT_WEIGHT, HEADING_SIZE, type HeadingSizeToken, type WeightToken } from './tokens';
 
 export interface ServiceItem {
     /**
@@ -40,6 +42,31 @@ export interface ServiceListProps {
      * @default "Available Services"
      */
     heading?: string;
+    /**
+     * Heading size preset (sm 14 / md 16 / lg 18 / xl 22).
+     * @default 'lg'
+     */
+    headingSize?: HeadingSizeToken;
+    /**
+     * Heading weight preset (regular 400 / medium 500 / bold 700).
+     * @default 'bold'
+     */
+    headingWeight?: WeightToken;
+    /**
+     * Weight of each card's title.
+     * @default 'regular'
+     */
+    itemTitleWeight?: WeightToken;
+    /**
+     * Weight of each card's price.
+     * @default 'regular'
+     */
+    itemPriceWeight?: WeightToken;
+    /**
+     * Weight of each card's CTA text.
+     * @default 'regular'
+     */
+    itemCtaWeight?: WeightToken;
     /** The service cards. */
     items?: ServiceItem[];
 }
@@ -50,6 +77,8 @@ const rowStyle: CSSProperties = {
     overflowX: 'auto',
     padding: '0 16px 6px',
     scrollSnapType: 'x mandatory',
+    // Keeps the mandatory snap from auto-scrolling past the padding (see upcoming-list).
+    scrollPaddingLeft: 16,
     scrollbarWidth: 'none',
 };
 const cardStyle: CSSProperties = {
@@ -72,6 +101,11 @@ const cardStyle: CSSProperties = {
  */
 export function ServiceList({
     heading = 'Available Services',
+    headingSize = 'lg',
+    headingWeight = 'bold',
+    itemTitleWeight = 'regular',
+    itemPriceWeight = 'regular',
+    itemCtaWeight = 'regular',
     items = [
         {
             title: 'Fast Track',
@@ -83,24 +117,24 @@ export function ServiceList({
     ],
 }: ServiceListProps) {
     return (
-        <div style={{ padding: '16px 0' }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#0A2333', padding: '0 16px 12px' }}>{heading}</div>
+        <div style={{ padding: '16px 0', fontFamily: FONT_FAMILY }}>
+            <div style={{ fontSize: HEADING_SIZE[headingSize], fontWeight: FONT_WEIGHT[headingWeight], color: '#0A2333', padding: '0 16px 12px' }}>{heading}</div>
             <div className="lce-hscroll" style={rowStyle}>
                 {items.map((it, i) => (
                     <div key={i} onClick={it.onClick} style={{ ...cardStyle, cursor: it.onClick ? 'pointer' : undefined }}>
                         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 5 }}>
-                            <div style={{ fontSize: 16, fontWeight: 700, color: '#0A2333' }}>{it.title}</div>
+                            <div style={{ fontSize: 16, fontWeight: FONT_WEIGHT[itemTitleWeight], color: '#0A2333' }}>{it.title}</div>
                             {it.description ? (
                                 <div style={{ fontSize: 13, color: '#5A6B7E', lineHeight: 1.4 }}>{it.description}</div>
                             ) : null}
                             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 2 }}>
-                                {it.price ? <span style={{ fontSize: 18, fontWeight: 700, color: '#0A2333' }}>{it.price}</span> : null}
+                                {it.price ? <span style={{ fontSize: 18, fontWeight: FONT_WEIGHT[itemPriceWeight], color: '#0A2333' }}>{it.price}</span> : null}
                                 {it.originalPrice ? (
                                     <span style={{ fontSize: 14, color: '#AFAEAD', textDecoration: 'line-through' }}>{it.originalPrice}</span>
                                 ) : null}
                             </div>
                             {it.ctaText ? (
-                                <span style={{ marginTop: 4, fontSize: 14, fontWeight: 600, color: '#2563EB' }}>{it.ctaText}</span>
+                                <span style={{ marginTop: 4, fontSize: 14, fontWeight: FONT_WEIGHT[itemCtaWeight], color: '#2563EB' }}>{it.ctaText}</span>
                             ) : null}
                         </div>
                         {it.image ? (

@@ -9,9 +9,10 @@
  *   <div> overflow-x:auto + scroll-snap  <ScrollView horizontal> + snapToInterval
  *   flex: 0 0 cardWidth%                 width: (screenWidth-32) * cardWidth/100
  *   <img object-fit:cover>               <Image resizeMode="cover">
+ *   onClick (card)                       <Pressable onPress>
  *   <MediaCaption> (web)                 <MediaCaption> → resolves to .native here
  */
-import { ScrollView, View, Image, StyleSheet, Dimensions } from 'react-native';
+import { ScrollView, Image, Pressable, StyleSheet, Dimensions } from 'react-native';
 import { MediaCaption } from './media-caption';
 import type { MediaCarouselProps } from './media-carousel';
 
@@ -34,14 +35,18 @@ export function MediaCarousel({
             contentContainerStyle={{ paddingHorizontal: 16, gap }}
         >
             {items.map((item, i) => (
-                <View key={i} style={{ width: w, height, borderRadius: 8, overflow: 'hidden' }}>
+                <Pressable
+                    key={i}
+                    onPress={item.onClick}
+                    style={{ width: w, height, borderRadius: 8, overflow: 'hidden' }}
+                >
                     <Image
                         source={{ uri: item.src }}
                         resizeMode="cover"
                         style={StyleSheet.absoluteFill}
                     />
                     <MediaCaption badge={item.badge} title={item.title} description={item.description} />
-                </View>
+                </Pressable>
             ))}
         </ScrollView>
     );

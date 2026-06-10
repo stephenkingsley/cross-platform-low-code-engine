@@ -41,7 +41,8 @@ const VARIANT: Record<
     caption: { fontSize: 12, lineHeight: 18, fontWeight: 400, color: '#AFAEAD' },
 };
 
-const FONT_FAMILY = "'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif";
+/** dp-design font stack — exported so sibling templates render the same face everywhere. */
+export const FONT_FAMILY = "'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif";
 
 /**
  * Styled text primitive built on dp-design's typography tokens. `text` is a scalar
