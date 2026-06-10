@@ -1,5 +1,5 @@
 import * as DP from '@dragonpass/atom-ui-mobile';
-import { Card, Flex, HeroOverview, MediaCaption, MediaCarousel, Overlay, Typography, WhatsNew } from '@lce/layout';
+import { Card, Flex, HeroOverview, MediaCaption, MediaCarousel, Overlay, ServiceList, Typography, UpcomingList, WhatsNew } from '@lce/layout';
 import type { Manifest } from '@lce/manifest';
 import type { ComponentRegistry } from '@lce/runtime-react';
 import generated from './manifest.generated.json';
@@ -12,7 +12,7 @@ const dp = DP as Record<string, unknown>;
  * every dp-design component resolved by name from the package namespace. Components
  * with no matching export are simply skipped.
  */
-export const registry: ComponentRegistry = { Flex, Card, Overlay, Typography, MediaCaption, MediaCarousel, HeroOverview, WhatsNew };
+export const registry: ComponentRegistry = { Flex, Card, Overlay, Typography, MediaCaption, MediaCarousel, HeroOverview, WhatsNew, UpcomingList, ServiceList };
 for (const c of manifest.components) {
     if (registry[c.name]) continue;
     const comp = dp[c.name];

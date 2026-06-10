@@ -41,6 +41,12 @@ export interface ExtractTarget {
     reactNodeAsSlot?: boolean;
     /** When true, append a synthetic `action` field (declarative "on click") to this component. */
     action?: boolean;
+    /**
+     * When true, append a synthetic `binding` field — a {@link DataBinding} (source +
+     * field map). The component renders its static `items` until the project supplies
+     * real data under the binding's `source`; the runtime then maps it onto `items`.
+     */
+    dataBound?: boolean;
 }
 
 export interface ExtractProject {
@@ -64,6 +70,8 @@ export const LAYOUT_PROJECT: ExtractProject = {
         { name: 'MediaCarousel', propsType: 'MediaCarouselProps', file: 'packages/layout/src/media-carousel.tsx', source: 'engine', category: 'Media' },
         { name: 'HeroOverview', propsType: 'HeroOverviewProps', file: 'packages/layout/src/hero-overview.tsx', source: 'engine', category: 'Templates' },
         { name: 'WhatsNew', propsType: 'WhatsNewProps', file: 'packages/layout/src/whats-new.tsx', source: 'engine', category: 'Templates' },
+        { name: 'UpcomingList', propsType: 'UpcomingListProps', file: 'packages/layout/src/upcoming-list.tsx', source: 'engine', category: 'Templates', dataBound: true },
+        { name: 'ServiceList', propsType: 'ServiceListProps', file: 'packages/layout/src/service-list.tsx', source: 'engine', category: 'Templates', dataBound: true },
     ],
 };
 

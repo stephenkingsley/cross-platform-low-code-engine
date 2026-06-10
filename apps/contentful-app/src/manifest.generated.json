@@ -820,6 +820,405 @@
       "slotFields": []
     },
     {
+      "name": "UpcomingList",
+      "source": "engine",
+      "category": "Templates",
+      "fields": [
+        {
+          "name": "heading",
+          "label": "Heading",
+          "description": "Section heading.",
+          "field": {
+            "kind": "text"
+          },
+          "defaultValue": "Upcoming",
+          "required": false
+        },
+        {
+          "name": "viewAllText",
+          "label": "View All Text",
+          "description": "\"View all\" link text (leave empty to hide it).",
+          "field": {
+            "kind": "text"
+          },
+          "defaultValue": "View all",
+          "required": false
+        },
+        {
+          "name": "viewAllHref",
+          "label": "View All Href",
+          "description": "URL the \"View all\" link points to.",
+          "field": {
+            "kind": "url"
+          },
+          "required": false
+        },
+        {
+          "name": "items",
+          "label": "Items",
+          "description": "The booking cards.",
+          "field": {
+            "kind": "array",
+            "itemFields": [
+              {
+                "name": "title",
+                "label": "Title",
+                "description": "Card title (the lounge / service name).",
+                "field": {
+                  "kind": "text"
+                },
+                "defaultValue": "Example Lounge",
+                "required": false
+              },
+              {
+                "name": "location",
+                "label": "Location",
+                "description": "Location line.",
+                "field": {
+                  "kind": "text"
+                },
+                "defaultValue": "Example Airport (EXA)",
+                "required": false
+              },
+              {
+                "name": "datetime",
+                "label": "Datetime",
+                "description": "Date · time line.",
+                "field": {
+                  "kind": "text"
+                },
+                "defaultValue": "01 Sep 2026 • 10:30",
+                "required": false
+              },
+              {
+                "name": "status",
+                "label": "Status",
+                "description": "Status label.",
+                "field": {
+                  "kind": "text"
+                },
+                "defaultValue": "Confirmed",
+                "required": false
+              },
+              {
+                "name": "statusTone",
+                "label": "Status Tone",
+                "description": "Status colour tone.",
+                "field": {
+                  "kind": "select",
+                  "options": [
+                    {
+                      "label": "success",
+                      "value": "success"
+                    },
+                    {
+                      "label": "warning",
+                      "value": "warning"
+                    },
+                    {
+                      "label": "neutral",
+                      "value": "neutral"
+                    }
+                  ]
+                },
+                "defaultValue": "success",
+                "required": false
+              },
+              {
+                "name": "image",
+                "label": "Image",
+                "description": "Thumbnail image.",
+                "field": {
+                  "kind": "image"
+                },
+                "required": false
+              },
+              {
+                "name": "action",
+                "label": "On click",
+                "description": "Per-card click action.",
+                "field": {
+                  "kind": "action"
+                },
+                "required": false
+              }
+            ],
+            "itemLabel": "title"
+          },
+          "required": false
+        },
+        {
+          "name": "binding",
+          "label": "Data binding",
+          "field": {
+            "kind": "dataMap",
+            "itemFields": [
+              {
+                "name": "title",
+                "label": "Title",
+                "description": "Card title (the lounge / service name).",
+                "field": {
+                  "kind": "text"
+                },
+                "defaultValue": "Example Lounge",
+                "required": false
+              },
+              {
+                "name": "location",
+                "label": "Location",
+                "description": "Location line.",
+                "field": {
+                  "kind": "text"
+                },
+                "defaultValue": "Example Airport (EXA)",
+                "required": false
+              },
+              {
+                "name": "datetime",
+                "label": "Datetime",
+                "description": "Date · time line.",
+                "field": {
+                  "kind": "text"
+                },
+                "defaultValue": "01 Sep 2026 • 10:30",
+                "required": false
+              },
+              {
+                "name": "status",
+                "label": "Status",
+                "description": "Status label.",
+                "field": {
+                  "kind": "text"
+                },
+                "defaultValue": "Confirmed",
+                "required": false
+              },
+              {
+                "name": "statusTone",
+                "label": "Status Tone",
+                "description": "Status colour tone.",
+                "field": {
+                  "kind": "select",
+                  "options": [
+                    {
+                      "label": "success",
+                      "value": "success"
+                    },
+                    {
+                      "label": "warning",
+                      "value": "warning"
+                    },
+                    {
+                      "label": "neutral",
+                      "value": "neutral"
+                    }
+                  ]
+                },
+                "defaultValue": "success",
+                "required": false
+              },
+              {
+                "name": "image",
+                "label": "Image",
+                "description": "Thumbnail image.",
+                "field": {
+                  "kind": "image"
+                },
+                "required": false
+              },
+              {
+                "name": "action",
+                "label": "On click",
+                "description": "Per-card click action.",
+                "field": {
+                  "kind": "action"
+                },
+                "required": false
+              }
+            ]
+          },
+          "required": false
+        }
+      ],
+      "slotFields": []
+    },
+    {
+      "name": "ServiceList",
+      "source": "engine",
+      "category": "Templates",
+      "fields": [
+        {
+          "name": "heading",
+          "label": "Heading",
+          "description": "Section heading.",
+          "field": {
+            "kind": "text"
+          },
+          "defaultValue": "Available Services",
+          "required": false
+        },
+        {
+          "name": "items",
+          "label": "Items",
+          "description": "The service cards.",
+          "field": {
+            "kind": "array",
+            "itemFields": [
+              {
+                "name": "title",
+                "label": "Title",
+                "description": "Service title.",
+                "field": {
+                  "kind": "text"
+                },
+                "defaultValue": "Fast Track",
+                "required": false
+              },
+              {
+                "name": "description",
+                "label": "Description",
+                "description": "Short description.",
+                "field": {
+                  "kind": "text"
+                },
+                "defaultValue": "More airports, more ways to simplify your travel.",
+                "required": false
+              },
+              {
+                "name": "price",
+                "label": "Price",
+                "description": "Current price.",
+                "field": {
+                  "kind": "text"
+                },
+                "defaultValue": "$20",
+                "required": false
+              },
+              {
+                "name": "originalPrice",
+                "label": "Original Price",
+                "description": "Original (struck-through) price.",
+                "field": {
+                  "kind": "text"
+                },
+                "defaultValue": "$36",
+                "required": false
+              },
+              {
+                "name": "ctaText",
+                "label": "Cta Text",
+                "description": "Call-to-action link text.",
+                "field": {
+                  "kind": "text"
+                },
+                "defaultValue": "Book now",
+                "required": false
+              },
+              {
+                "name": "image",
+                "label": "Image",
+                "description": "Thumbnail image.",
+                "field": {
+                  "kind": "image"
+                },
+                "required": false
+              },
+              {
+                "name": "action",
+                "label": "On click",
+                "description": "Per-card click action (the CTA / whole card).",
+                "field": {
+                  "kind": "action"
+                },
+                "required": false
+              }
+            ],
+            "itemLabel": "title"
+          },
+          "required": false
+        },
+        {
+          "name": "binding",
+          "label": "Data binding",
+          "field": {
+            "kind": "dataMap",
+            "itemFields": [
+              {
+                "name": "title",
+                "label": "Title",
+                "description": "Service title.",
+                "field": {
+                  "kind": "text"
+                },
+                "defaultValue": "Fast Track",
+                "required": false
+              },
+              {
+                "name": "description",
+                "label": "Description",
+                "description": "Short description.",
+                "field": {
+                  "kind": "text"
+                },
+                "defaultValue": "More airports, more ways to simplify your travel.",
+                "required": false
+              },
+              {
+                "name": "price",
+                "label": "Price",
+                "description": "Current price.",
+                "field": {
+                  "kind": "text"
+                },
+                "defaultValue": "$20",
+                "required": false
+              },
+              {
+                "name": "originalPrice",
+                "label": "Original Price",
+                "description": "Original (struck-through) price.",
+                "field": {
+                  "kind": "text"
+                },
+                "defaultValue": "$36",
+                "required": false
+              },
+              {
+                "name": "ctaText",
+                "label": "Cta Text",
+                "description": "Call-to-action link text.",
+                "field": {
+                  "kind": "text"
+                },
+                "defaultValue": "Book now",
+                "required": false
+              },
+              {
+                "name": "image",
+                "label": "Image",
+                "description": "Thumbnail image.",
+                "field": {
+                  "kind": "image"
+                },
+                "required": false
+              },
+              {
+                "name": "action",
+                "label": "On click",
+                "description": "Per-card click action (the CTA / whole card).",
+                "field": {
+                  "kind": "action"
+                },
+                "required": false
+              }
+            ]
+          },
+          "required": false
+        }
+      ],
+      "slotFields": []
+    },
+    {
       "name": "Text",
       "source": "dp-design",
       "category": "dp-design",
@@ -2051,7 +2450,7 @@
           "label": "Url",
           "description": "Link configuration information including URL and type",
           "field": {
-            "kind": "text"
+            "kind": "url"
           },
           "required": false
         },
@@ -8805,7 +9204,7 @@
                 "label": "Link",
                 "description": "Product link",
                 "field": {
-                  "kind": "text"
+                  "kind": "url"
                 },
                 "required": false
               },

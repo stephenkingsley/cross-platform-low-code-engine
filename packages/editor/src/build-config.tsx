@@ -1,7 +1,7 @@
 import { Component, createElement, type ComponentType, type ReactNode } from 'react';
 import type { Config, Field, Fields } from '@puckeditor/core';
-import { resolveLocalized, resolveMedia, type Action, type ComponentManifest, type ManifestField, type Manifest } from '@lce/manifest';
-import { ActionField, ColorField, ImageField, LocalizedTextField } from './custom-fields';
+import { resolveLocalized, resolveMedia, type Action, type ComponentManifest, type DataBinding, type ManifestField, type Manifest } from '@lce/manifest';
+import { ActionField, ColorField, DataMapField, ImageField, LocalizedTextField } from './custom-fields';
 
 /** Keeps one misbehaving component from crashing the whole editor canvas. */
 class Boundary extends Component<{ name: string; children?: ReactNode }, { failed: boolean }> {
@@ -82,6 +82,9 @@ function toPuckField(
                 } as Field;
             }
             return { type: d.kind, label: field.label } as Field;
+        case 'url':
+            // A link / route — a plain single-line string, never per-locale.
+            return { type: 'text', label: field.label } as Field;
         case 'number':
             return { type: 'number', label: field.label } as Field;
         case 'select':
@@ -113,6 +116,18 @@ function toPuckField(
                         value: value as Action | undefined,
                         onChange: onChange as (v: Action | undefined) => void,
                         label: field.label,
+                    }),
+            } as Field;
+        case 'dataMap':
+            return {
+                type: 'custom',
+                label: field.label,
+                render: ({ onChange, value }: { onChange: (v: unknown) => void; value?: unknown }) =>
+                    createElement(DataMapField, {
+                        value: value as DataBinding | undefined,
+                        onChange: onChange as (v: DataBinding | undefined) => void,
+                        label: field.label,
+                        targetFields: d.itemFields,
                     }),
             } as Field;
         case 'array': {
@@ -207,7 +222,9 @@ function resolveProp(
     fallbackLocale?: string,
 ): unknown {
     const kind = field.field.kind;
-    if (kind === 'text' || kind === 'textarea') {
+    if (kind === 'text' || kind === 'textarea' || kind === 'url') {
+        // `url` isn't localized, but resolveLocalized is a no-op on plain strings and
+        // gracefully unwraps any legacy localized value.
         return resolveLocalized(value, locale, fallbackLocale);
     }
     if (kind === 'image') {
@@ -224,7 +241,7 @@ function resolveProp(
                 const k = itf.name;
                 if (itf.field.kind === 'slot' && typeof item?.[k] === 'function') {
                     row[k] = createElement(item[k]);
-                } else if (itf.field.kind === 'text' || itf.field.kind === 'textarea') {
+                } else if (itf.field.kind === 'text' || itf.field.kind === 'textarea' || itf.field.kind === 'url') {
                     row[k] = resolveLocalized(item?.[k], locale, fallbackLocale);
                 } else if (itf.field.kind === 'image') {
                     row[k] = resolveMedia(item?.[k]);
@@ -253,7 +270,9 @@ function buildComponentConfig(c: ComponentManifest, registry: ComponentRegistry,
             for (const f of c.fields) {
                 // The editor previews layout, not clicks — Puck owns canvas selection, so we
                 // don't wire `action` to onClick here (it's configured in the right panel).
-                if (f.field.kind === 'action') continue;
+                // `dataMap` (binding) is resolved by the RUNTIME against real data; the editor
+                // shows the component's static example, so skip it here too.
+                if (f.field.kind === 'action' || f.field.kind === 'dataMap') continue;
                 finalProps[f.name] = resolveProp(f, props[f.name], opts.locale, opts.fallbackLocale);
             }
             return createElement(Boundary, { name: c.name }, createElement(Comp, finalProps));

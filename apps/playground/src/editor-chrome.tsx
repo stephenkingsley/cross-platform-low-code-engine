@@ -18,6 +18,8 @@ const LABELS: Record<string, string> = {
     EsimPolicyAgree: 'eSIM Policy',
     HeroOverview: 'Hero overview',
     WhatsNew: "What's new",
+    UpcomingList: 'Upcoming',
+    ServiceList: 'Available services',
 };
 
 /** `NavHeader` → `Nav Header` */
@@ -55,7 +57,7 @@ export const puckOverrides = {
 
 /** Group the whole component drawer into friendly categories (covers all components). */
 export const categories = {
-    templates: { title: 'Templates', components: ['HeroOverview', 'WhatsNew'] },
+    templates: { title: 'Templates', components: ['HeroOverview', 'WhatsNew', 'UpcomingList', 'ServiceList'] },
     layout: { title: 'Layout & containers', components: ['Flex', 'Card', 'Overlay', 'Typography', 'Divider', 'Collapse', 'Sheet', 'SafeArea'] },
     content: { title: 'Content', components: ['Text', 'Tag', 'LinkCard', 'DataRow', 'Overview', 'FlightCard', 'Bill', 'Journey'] },
     media: { title: 'Media', components: ['Image', 'Swiper', 'MediaCarousel', 'MediaCaption', 'ImageViewer', 'ScrollView', 'QrCode'] },

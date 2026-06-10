@@ -33,7 +33,9 @@ export type FieldDescriptor =
     | { kind: 'slot' }
     | { kind: 'color' }
     | { kind: 'image' }
+    | { kind: 'url' }
     | { kind: 'action' }
+    | { kind: 'dataMap'; itemFields?: ManifestField[] }
     | { kind: 'array'; itemFields: ManifestField[]; itemLabel?: string };
 
 /** One configurable prop of a component. */
@@ -123,3 +125,6 @@ export * from './media';
 
 // ---- actions (declarative click behaviour) ----------------------------------
 export * from './action';
+
+// ---- data binding (server data → component items) ---------------------------
+export * from './mapping';
