@@ -2,6 +2,8 @@ import { Component, createElement, Fragment, type ComponentType, type ReactNode 
 import {
     findComponent,
     isAction,
+    isDataBinding,
+    resolveBinding,
     resolveLocalized,
     resolveMedia,
     type Action,
@@ -9,6 +11,7 @@ import {
     type ManifestField,
     type Manifest,
     type Node,
+    type TransformFns,
 } from '@lce/manifest';
 
 /** Keeps one misbehaving component from crashing the whole runtime render. */
@@ -40,9 +43,28 @@ export interface RenderProps {
     fallback?: (node: Node) => ReactNode;
     /** Host dispatcher for a component's declarative `action` (click) — navigate, emit, … */
     onAction?: (action: Action, info?: { node?: Node }) => void;
+    /**
+     * Raw server data per binding id. A data-bound component's `binding.source` looks up
+     * here; the runtime maps the array onto the component's `items` via the saved field map.
+     * Absent / missing source → the component keeps its static example.
+     */
+    bindings?: Record<string, unknown>;
+    /** Host-registered transform functions referenced by a field map's `transform` (escape hatch). */
+    transforms?: TransformFns;
 }
 
-type Ctx = Pick<RenderProps, 'registry' | 'manifest' | 'fallback' | 'locale' | 'fallbackLocale' | 'onAction'>;
+type Ctx = Pick<
+    RenderProps,
+    'registry' | 'manifest' | 'fallback' | 'locale' | 'fallbackLocale' | 'onAction' | 'bindings' | 'transforms'
+>;
+
+/** Turn a mapped item's declarative `action` into an `onClick` the card component wires up. */
+function wireItemAction(item: Record<string, unknown>, ctx: Ctx): Record<string, unknown> {
+    if (item.action === undefined) return item;
+    const { action, ...row } = item;
+    if (isAction(action) && ctx.onAction) row.onClick = () => ctx.onAction!(action);
+    return row;
+}
 
 /**
  * Turn a saved prop value into the real React prop: recurse into slots/arrays, and
@@ -51,7 +73,7 @@ type Ctx = Pick<RenderProps, 'registry' | 'manifest' | 'fallback' | 'locale' | '
 function resolveValue(field: ManifestField | undefined, value: unknown, ctx: Ctx): unknown {
     if (!field) return value;
     const kind = field.field.kind;
-    if (kind === 'text' || kind === 'textarea') {
+    if (kind === 'text' || kind === 'textarea' || kind === 'url') {
         return resolveLocalized(value, ctx.locale, ctx.fallbackLocale);
     }
     if (kind === 'image') {
@@ -68,7 +90,7 @@ function resolveValue(field: ManifestField | undefined, value: unknown, ctx: Ctx
                 const v = item[itf.name];
                 if (itf.field.kind === 'slot' && Array.isArray(v)) {
                     row[itf.name] = renderList(v as Node[], ctx);
-                } else if (itf.field.kind === 'text' || itf.field.kind === 'textarea') {
+                } else if (itf.field.kind === 'text' || itf.field.kind === 'textarea' || itf.field.kind === 'url') {
                     row[itf.name] = resolveLocalized(v, ctx.locale, ctx.fallbackLocale);
                 } else if (itf.field.kind === 'image') {
                     row[itf.name] = resolveMedia(v);
@@ -101,6 +123,19 @@ function renderNode(node: Node, ctx: Ctx): ReactNode {
         props[key] = resolveValue(fieldByName.get(key), value, ctx);
     }
 
+    // data binding: map the project's real data onto `items`, overriding the static example.
+    // When no data is supplied for the source, the component keeps its configured items.
+    const binding = props.binding;
+    delete props.binding;
+    if (isDataBinding(binding) && ctx.bindings && binding.source) {
+        const raw = ctx.bindings[binding.source];
+        if (Array.isArray(raw)) {
+            props.items = resolveBinding(raw, binding.fields, ctx.transforms).map((it) =>
+                wireItemAction(it, ctx),
+            );
+        }
+    }
+
     // a declarative `action` becomes a real onClick that calls the host dispatcher
     const action = props.action;
     delete props.action;
@@ -126,6 +161,25 @@ function renderList(nodes: Node[], ctx: Ctx): ReactNode {
  * Puck. The React Native runtime will be the same walk over the same JSON with a native
  * component registry.
  */
-export function Render({ data, registry, manifest, fallback, locale, fallbackLocale, onAction }: RenderProps) {
-    return renderList(data.content, { registry, manifest, fallback, locale, fallbackLocale, onAction });
+export function Render({
+    data,
+    registry,
+    manifest,
+    fallback,
+    locale,
+    fallbackLocale,
+    onAction,
+    bindings,
+    transforms,
+}: RenderProps) {
+    return renderList(data.content, {
+        registry,
+        manifest,
+        fallback,
+        locale,
+        fallbackLocale,
+        onAction,
+        bindings,
+        transforms,
+    });
 }

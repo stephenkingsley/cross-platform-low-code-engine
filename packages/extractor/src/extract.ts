@@ -157,7 +157,7 @@ function classifyItemProp(prop: TsSymbol, loc: Node): ManifestField | null {
     const type = sig ? sig.getType() : prop.getTypeAtLocation(loc);
     if (type.getCallSignatures().length > 0) return null;
     const required = sig ? !sig.hasQuestionToken() : false;
-    const { description } = sig ? readJsDoc(sig) : {};
+    const { description, defaultValue } = sig ? readJsDoc(sig) : {};
     if (name === 'action') {
         // A per-row declarative click action (e.g. a carousel card's link).
         return { name, label: 'On click', description, field: { kind: 'action' }, required };
@@ -171,8 +171,10 @@ function classifyItemProp(prop: TsSymbol, loc: Node): ManifestField | null {
         if (/colou?r$/i.test(name)) field = { kind: 'color' };
         else if (/^(src|image|imageurl|cover|avatar|photo|logo)$/i.test(name))
             field = { kind: 'image' };
+        else if (/(href|url|link)$/i.test(name) && !/(image|img|photo|avatar|logo|icon|cover|thumb|src|media)/i.test(name))
+            field = { kind: 'url' };
     }
-    return { name, label: humanize(name), description, field, required };
+    return { name, label: humanize(name), description, field, defaultValue, required };
 }
 
 function classify(prop: TsSymbol, target: ExtractTarget, loc: Node): ManifestField | null {
@@ -265,6 +267,8 @@ function classify(prop: TsSymbol, target: ExtractTarget, loc: Node): ManifestFie
         if (/colou?r$/i.test(name)) field = { kind: 'color' };
         else if (/^(src|image|imageurl|cover|avatar|photo|logo)$/i.test(name))
             field = { kind: 'image' };
+        else if (/(href|url|link)$/i.test(name) && !/(image|img|photo|avatar|logo|icon|cover|thumb|src|media)/i.test(name))
+            field = { kind: 'url' };
     }
 
     return { name, label: humanize(name), description, field, defaultValue, required };
@@ -290,6 +294,20 @@ function extractComponent(
         // Synthetic declarative "on click" — the component's real handler is a function
         // (stripped from the manifest); this is the data the runtime wires to onClick.
         fields.push({ name: 'action', label: 'On click', field: { kind: 'action' }, required: false });
+    }
+    if (target.dataBound) {
+        // Synthetic data binding — source id + field map. The runtime maps the project's
+        // real data onto `items`; until then the component shows its static example. We copy
+        // the `items` array's item fields onto the descriptor so the editor knows which target
+        // fields to offer in the mapping UI.
+        const itemsField = fields.find((f) => f.field.kind === 'array');
+        const itemFields = itemsField?.field.kind === 'array' ? itemsField.field.itemFields : undefined;
+        fields.push({
+            name: 'binding',
+            label: 'Data binding',
+            field: { kind: 'dataMap', itemFields },
+            required: false,
+        });
     }
 
     return {

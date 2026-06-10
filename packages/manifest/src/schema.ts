@@ -47,6 +47,8 @@ export function documentJsonSchema(manifest: Manifest, opts: SchemaOptions = {})
                 return { type: 'string', title: `${f.label} (colour, e.g. #16415e)` };
             case 'image':
                 return { type: 'string', title: `${f.label} (image URL or data URI)` };
+            case 'url':
+                return { type: 'string', title: `${f.label} (URL / route)` };
             case 'number':
                 return {
                     type: 'number',
@@ -77,6 +79,12 @@ export function documentJsonSchema(manifest: Manifest, opts: SchemaOptions = {})
                 return {
                     type: 'object',
                     title: `${f.label} (navigate / event action)`,
+                    additionalProperties: true,
+                };
+            case 'dataMap':
+                return {
+                    type: 'object',
+                    title: `${f.label} (data binding: source + field map)`,
                     additionalProperties: true,
                 };
         }
