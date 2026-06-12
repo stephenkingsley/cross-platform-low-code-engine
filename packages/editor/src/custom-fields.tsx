@@ -111,35 +111,177 @@ export function LocalizedTextField({ value, onChange, label, locales, multiline 
 }
 
 /** Colour swatch + hex input. Auto-applied to `*color` string props. */
-export function ColorField({ value, onChange, label }: FieldProps) {
-    const hex = /^#[0-9a-fA-F]{6}$/.test(value ?? '') ? (value as string) : '#000000';
+/**
+ * dp-design colour tokens, surfaced as a palette. Selecting one stores its CSS-var reference
+ * (`var(--aum-*)`) — NOT a hex — so the chosen colour tracks the active dp theme (white-label).
+ * Curated to the semantic tokens (duplicates like primary≡emphasis dropped).
+ */
+const DP_PALETTE: { label: string; token: string; varName: string }[] = [
+    { label: 'Text · Emphasis', token: 'fgEmphasisColor', varName: '--aum-fg-emphasis-color' },
+    { label: 'Text · Primary', token: 'fgPrimaryColor', varName: '--aum-fg-primary-color' },
+    { label: 'Text · Secondary', token: 'fgSecondaryColor', varName: '--aum-fg-secondary-color' },
+    { label: 'Text · Tertiary', token: 'fgTertiaryColor', varName: '--aum-fg-tertiary-color' },
+    { label: 'On dark (white)', token: 'fgEmphasisInverseColor', varName: '--aum-fg-emphasis-inverse-color' },
+    { label: 'Interactive / Link', token: 'interactiveColor', varName: '--aum-interactive-color' },
+    { label: 'Success', token: 'successColor', varName: '--aum-success-color' },
+    { label: 'Warning', token: 'warningColor', varName: '--aum-warning-color' },
+    { label: 'Error', token: 'errorColor', varName: '--aum-error-color' },
+    { label: 'Border', token: 'borderDefaultColor', varName: '--aum-border-default-color' },
+];
+
+/**
+ * dp colour-token swatch picker — stores the TOKEN NAME (e.g. "successColor"), which the components
+ * resolve to its live `--aum-*` var at render, so re-skinning follows. The swatch previews the
+ * colour through that CSS var (display only); the selected token's name is shown below the grid.
+ */
+function DpColorPicker({ value, onChange }: { value?: string; onChange: (v: string) => void }) {
+    const current = DP_PALETTE.find((c) => c.token === value);
+    return (
+        <div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {DP_PALETTE.map((c) => {
+                    const selected = (value || '') === c.token;
+                    return (
+                        <button
+                            key={c.token}
+                            type="button"
+                            title={`${c.label} (${c.token})`}
+                            aria-label={c.label}
+                            onClick={() => onChange(c.token)}
+                            style={{
+                                width: 30,
+                                height: 30,
+                                borderRadius: 7,
+                                cursor: 'pointer',
+                                padding: 0,
+                                background: `var(${c.varName})`,
+                                border: selected
+                                    ? '2px solid var(--puck-color-azure-05, #2563eb)'
+                                    : '1px solid var(--puck-color-grey-09, #cbd5e1)',
+                                boxShadow: selected ? '0 0 0 2px rgba(37,99,235,0.25)' : undefined,
+                            }}
+                        />
+                    );
+                })}
+            </div>
+            {/* Name the selected token so the ops user knows exactly what they picked (label + the key stored). */}
+            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--puck-color-grey-05, #64748b)' }}>
+                {current ? (
+                    <>
+                        <span>{current.label}</span>
+                        <code style={{ fontFamily: 'ui-monospace, monospace', fontSize: 11, color: 'var(--puck-color-grey-03, #334155)', background: 'var(--puck-color-grey-11, #f1f5f9)', padding: '1px 6px', borderRadius: 4 }}>{current.token}</code>
+                    </>
+                ) : (
+                    <span style={{ fontStyle: 'italic' }}>Pick a colour token</span>
+                )}
+            </div>
+        </div>
+    );
+}
+
+type RGBA = [number, number, number, number];
+function parseRgba(s: string): RGBA | null {
+    if (!s) return null;
+    const m = /rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)(?:[\s,/]+([\d.]+))?\s*\)/i.exec(s);
+    if (m) return [+m[1], +m[2], +m[3], m[4] != null ? +m[4] : 1];
+    const h = /#([0-9a-fA-F]{6})/.exec(s);
+    if (h) { const n = parseInt(h[1], 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255, 1]; }
+    return null;
+}
+const rgbaStr = (c: RGBA): string => `rgba(${Math.round(c[0])}, ${Math.round(c[1])}, ${Math.round(c[2])}, ${+c[3].toFixed(2)})`;
+const rgbaHex = (c: RGBA): string => '#' + c.slice(0, 3).map((x) => Math.round(x).toString(16).padStart(2, '0')).join('');
+
+/** A hex colour swatch + an alpha slider → an `[r,g,b,a]` tuple. */
+function AlphaSwatch({ rgba, onChange }: { rgba: RGBA; onChange: (c: RGBA) => void }) {
+    return (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input
+                type="color"
+                value={rgbaHex(rgba)}
+                onChange={(e) => { const p = parseRgba(e.target.value); if (p) onChange([p[0], p[1], p[2], rgba[3]]); }}
+                style={{ width: 36, height: 30, border: '1px solid var(--puck-color-grey-09, #cbd5e1)', borderRadius: 6, padding: 2, background: '#fff', cursor: 'pointer', flex: 'none' }}
+            />
+            <input type="range" min={0} max={100} value={Math.round(rgba[3] * 100)} onChange={(e) => onChange([rgba[0], rgba[1], rgba[2], Number(e.target.value) / 100])} style={{ flex: 1 }} />
+            <span style={{ width: 38, textAlign: 'right', fontSize: 12, color: 'var(--puck-color-grey-05, #64748b)' }}>{Math.round(rgba[3] * 100)}%</span>
+        </div>
+    );
+}
+
+const bgTab = (active: boolean): CSSProperties => ({
+    flex: 1, padding: '6px 0', fontSize: 12, fontWeight: 600, cursor: 'pointer', textAlign: 'center',
+    borderRadius: 6, border: '1px solid var(--puck-color-grey-09, #cbd5e1)',
+    background: active ? 'var(--puck-color-grey-02, #0f172a)' : 'var(--puck-color-white, #fff)',
+    color: active ? '#fff' : 'var(--puck-color-grey-04, #475569)',
+});
+
+/**
+ * Background picker — a solid colour WITH alpha, OR a 2-stop linear gradient (angle + two
+ * alpha stops). Emits a plain CSS string (`rgba(...)` / `linear-gradient(...)`) the component
+ * applies directly; a raw text box always mirrors/edits the value for power users.
+ */
+export function BackgroundField({ value, onChange, label }: FieldProps) {
+    const v = value ?? '';
+    const isGrad = /gradient/i.test(v);
+    const stops = (v.match(/rgba?\([^)]*\)|#[0-9a-fA-F]{6}/g) || []).map(parseRgba).filter(Boolean) as RGBA[];
+    const angleMatch = /(-?\d+)deg/.exec(v);
+    const angle = angleMatch ? Number(angleMatch[1]) : 180;
+    const from: RGBA = (isGrad && stops[0]) || [0, 0, 0, 0];
+    const to: RGBA = (isGrad && stops[1]) || [0, 0, 0, 0.6];
+
+    const emitGrad = (a: number, f: RGBA, t: RGBA) => onChange(`linear-gradient(${a}deg, ${rgbaStr(f)}, ${rgbaStr(t)})`);
+
+    // Solid value = "<tokenName> [alpha]" e.g. "successColor 0.6"; alpha omitted = fully opaque.
+    const [solidTok, solidAStr] = (isGrad ? '' : v).trim().split(/\s+/);
+    const solidAlpha = solidAStr ? Number(solidAStr) : 1;
+    const emitSolid = (t: string, a: number) => onChange(a < 1 ? `${t} ${+a.toFixed(2)}` : t);
+
     return (
         <div style={{ fontFamily: 'inherit' }}>
             {label ? <div style={labelStyle}>{label}</div> : null}
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <input
-                    type="color"
-                    value={hex}
-                    onChange={(e) => onChange(e.target.value)}
-                    style={{
-                        width: 40,
-                        height: 34,
-                        border: '1px solid var(--puck-color-grey-09, #cbd5e1)',
-                        borderRadius: 8,
-                        padding: 2,
-                        background: '#fff',
-                        cursor: 'pointer',
-                        flex: 'none',
-                    }}
-                />
-                <input
-                    type="text"
-                    value={value ?? ''}
-                    placeholder="#0a2333"
-                    onChange={(e) => onChange(e.target.value)}
-                    style={inputStyle}
-                />
+            <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+                <div style={bgTab(!isGrad)} onClick={() => { if (isGrad) onChange('fgEmphasisColor'); }}>Solid token</div>
+                <div style={bgTab(isGrad)} onClick={() => { if (!isGrad) emitGrad(angle, from, to); }}>Gradient</div>
             </div>
+            {!isGrad ? (
+                // Solid = pick a dp colour TOKEN (re-skins) + opacity (it's an overlay); gradient stays custom.
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <DpColorPicker value={solidTok} onChange={(t) => emitSolid(t, solidAlpha)} />
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <span style={{ fontSize: 12, color: 'var(--puck-color-grey-05, #64748b)', width: 50 }}>Opacity</span>
+                        <input type="range" min={0} max={100} value={Math.round(solidAlpha * 100)} onChange={(e) => emitSolid(solidTok || 'fgEmphasisColor', Number(e.target.value) / 100)} style={{ flex: 1 }} />
+                        <span style={{ width: 36, textAlign: 'right', fontSize: 12, color: 'var(--puck-color-grey-05, #64748b)' }}>{Math.round(solidAlpha * 100)}%</span>
+                    </div>
+                </div>
+            ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <span style={{ fontSize: 12, color: 'var(--puck-color-grey-05, #64748b)' }}>Angle</span>
+                        <input type="number" value={angle} onChange={(e) => emitGrad(Number(e.target.value) || 0, from, to)} style={{ ...inputStyle, width: 72, flex: 'none' }} />
+                        <span style={{ fontSize: 12, color: 'var(--puck-color-grey-05, #64748b)' }}>°</span>
+                    </div>
+                    <div style={subLabel}>From</div>
+                    <AlphaSwatch rgba={from} onChange={(c) => emitGrad(angle, c, to)} />
+                    <div style={subLabel}>To</div>
+                    <AlphaSwatch rgba={to} onChange={(c) => emitGrad(angle, from, c)} />
+                    <input
+                        type="text"
+                        value={v}
+                        onChange={(e) => onChange(e.target.value)}
+                        placeholder="linear-gradient(…)"
+                        style={{ ...inputStyle, marginTop: 4, fontFamily: 'monospace', fontSize: 11 }}
+                    />
+                </div>
+            )}
+        </div>
+    );
+}
+
+export function ColorField({ value, onChange, label }: FieldProps) {
+    // Colour = pick a dp design token (stores `var(--aum-*)`, re-skins) — not a raw hex.
+    return (
+        <div style={{ fontFamily: 'inherit' }}>
+            {label ? <div style={labelStyle}>{label}</div> : null}
+            <DpColorPicker value={value} onChange={onChange} />
         </div>
     );
 }

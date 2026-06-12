@@ -197,15 +197,100 @@ body,
 .adm-swiper-slide {
     position: relative;
 }
-/* In the EDITOR, Puck wraps slot content in zero-height *positioned* DropZone divs,
-   which would trap an absolute Overlay (it anchors to the 0px wrapper, not the
-   image). Neutralise those wrappers inside a swiper slide so the Overlay anchors
-   to the slide/image — making the editor match the runtime. */
-.adm-swiper-item div:not(.lce-overlay) {
+/* ============ Swiper authoring, EDIT CANVAS ONLY ============
+   Everything below is scoped to Puck's edit frame ([class*='PuckPreview'] is the
+   canvas wrapper Puck renders the page into). The in-app Preview and the runtime
+   render OUTSIDE this tree, so they keep the real one-slide-at-a-time swiper. */
+
+/* Spread the slides vertically so EVERY slide is visible and directly editable —
+   the real swiper shows one slide at a time, and you can't swipe a canvas whose
+   drag gestures belong to Puck's drag-and-drop. */
+[class*='PuckPreview'] .adm-swiper,
+[class*='PuckPreview'] .adm-swiper-track {
+    height: auto !important;
+}
+[class*='PuckPreview'] .adm-swiper-track-inner {
+    flex-direction: column !important;
+    transform: none !important;
+    width: 100% !important;
+    height: auto !important;
+    gap: 12px;
+    counter-reset: lce-slide;
+}
+[class*='PuckPreview'] .adm-swiper-item {
+    width: 100% !important;
+    flex: 0 0 auto !important;
+    position: relative !important;
+    counter-increment: lce-slide;
+    min-height: 96px;
+}
+/* The Swiper wrapper passes the dp Image `width:"100%"` + a fixed px `height`, so the photo fills
+   the slide at its CONFIGURED height (set inline) — keep that. Do NOT force `height:auto`: that made
+   the slide height track the image's LOADED aspect ratio, so a slow / not-yet-loaded photo had 0
+   height and the slide collapsed to a blank — the "3rd image doesn't render in the editor" bug. */
+[class*='PuckPreview'] .adm-swiper-item img.aum-image {
+    width: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+}
+[class*='PuckPreview'] .adm-swiper-item [class*='aum-image-skeleton'],
+[class*='PuckPreview'] .adm-swiper-item [class*='aum-image-error'] {
+    width: 100% !important;
+    height: 160px !important;
+    min-height: 96px !important;
+}
+/* slide number badge so ops can tell which item they're editing */
+[class*='PuckPreview'] .adm-swiper-item::after {
+    content: 'Slide ' counter(lce-slide);
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 30;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.72);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.7;
+    pointer-events: none;
+}
+/* dots are meaningless while slides are spread out — editor only */
+[class*='PuckPreview'] .aum-swiper-indicator,
+[class*='PuckPreview'] .adm-swiper-indicator {
+    display: none !important;
+}
+
+/* Puck wraps slot content in *positioned* zero-height wrapper divs, which would
+   trap an absolute Overlay (it anchors to the 0px wrapper, not the image).
+   Flatten those wrappers inside a swiper slide — but NOT the lce elements
+   (whose own absolute positioning is the point) and NOT Puck's DropZone targets
+   (styled explicitly below). */
+[class*='PuckPreview'] .adm-swiper-item div:not(.lce-overlay):not(.lce-positioned):not([class*='DropZone']) {
     position: static !important;
     height: auto !important;
     min-height: 0 !important;
     flex: 0 0 auto !important;
+}
+/* The slide's OWN content slot (direct child): in flow it sits BELOW the
+   full-height image (0px tall, clipped), so nothing could ever be dragged INTO
+   the swiper. Make it a full-bleed layer over the image instead — a real drop
+   target, and (being the same rect as the slide) an Overlay dropped into it
+   anchors exactly as in the runtime. */
+[class*='PuckPreview'] .adm-swiper-item > div[class*='DropZone'] {
+    position: absolute !important;
+    inset: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+}
+/* DropZones INSIDE an Overlay / Positioned: normal flow with a real hit-area,
+   so the panel itself stays the positioning context for free-placed blocks. */
+[class*='PuckPreview'] .adm-swiper-item .lce-overlay div[class*='DropZone'],
+[class*='PuckPreview'] .adm-swiper-item .lce-positioned div[class*='DropZone'] {
+    position: static !important;
+    inset: auto !important;
+    min-height: 48px !important;
+    align-self: stretch !important;
 }
 /* Inside a scrim Overlay, dp DataRow's text inherits the overlay's white colour
    (DataRow otherwise hard-codes dark text, which is illegible over a photo). */
@@ -213,11 +298,9 @@ body,
 .lce-overlay .aum-data-row-content {
     color: inherit !important;
 }
-/* The caption Overlay occupies the bottom of the slide, exactly where dp's Swiper
-   dots sit — hide the dots so they don't collide with the caption text. */
-.aum-swiper-indicator {
-    display: none !important;
-}
+/* dp Swiper pagination dots are now controlled per-component by the Swiper's `dots` prop (toggle) —
+   NO global hide (this blanket `display:none` was hiding them everywhere, incl. preview + runtime).
+   Turn `dots` off for a slide that has a bottom caption Overlay where the dots would collide. */
 /* Hide the scrollbar on the MediaCarousel's horizontal scroll-snap row. */
 .lce-hscroll::-webkit-scrollbar {
     display: none;
