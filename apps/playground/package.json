@@ -16,7 +16,10 @@
         "@lce/manifest": "workspace:*",
         "@lce/runtime-react": "workspace:*",
         "@puckeditor/core": "^0.21.0",
-        "pandora-box-react": "^0.1.0",
+        "pandora-box-dp": "^0.2.1",
+        "pandora-box-layout": "^0.1.17",
+        "pandora-box-manifest": "^0.2.8",
+        "pandora-box-react": "^0.3.0",
         "react": "^18.3.1",
         "react-dom": "^18.3.1"
     },

@@ -12,6 +12,9 @@
     "scripts": {
         "typecheck": "tsc --noEmit"
     },
+    "dependencies": {
+        "pandora-box-layout": "^0.1.17"
+    },
     "peerDependencies": {
         "react": ">=18"
     },

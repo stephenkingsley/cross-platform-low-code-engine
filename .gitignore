@@ -144,3 +144,9 @@ vite.config.ts.timestamp-*
 
 # Turborepo
 .turbo/
+
+# macOS
+.DS_Store
+
+# packaged deploy bundles (vite build output tarballs)
+dp-builder-dist-*.tar.gz

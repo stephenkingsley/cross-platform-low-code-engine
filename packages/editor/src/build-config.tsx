@@ -1,7 +1,7 @@
 import { Component, createElement, type ComponentType, type ReactNode } from 'react';
 import type { Config, Field, Fields } from '@puckeditor/core';
 import { resolveLocalized, resolveMedia, type Action, type ComponentManifest, type DataBinding, type ManifestField, type Manifest } from '@lce/manifest';
-import { ActionField, ColorField, DataMapField, ImageField, LocalizedTextField } from './custom-fields';
+import { ActionField, BackgroundField, ColorField, DataMapField, ImageField, LocalizedTextField } from './custom-fields';
 
 /** Keeps one misbehaving component from crashing the whole editor canvas. */
 class Boundary extends Component<{ name: string; children?: ReactNode }, { failed: boolean }> {
@@ -99,6 +99,13 @@ function toPuckField(
                 label: field.label,
                 render: ({ onChange, value }: { onChange: (v: unknown) => void; value?: string }) =>
                     createElement(ColorField, { value, onChange, label: field.label }),
+            } as Field;
+        case 'background':
+            return {
+                type: 'custom',
+                label: field.label,
+                render: ({ onChange, value }: { onChange: (v: unknown) => void; value?: string }) =>
+                    createElement(BackgroundField, { value, onChange, label: field.label }),
             } as Field;
         case 'image':
             return {

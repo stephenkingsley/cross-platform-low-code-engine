@@ -45,6 +45,8 @@ export function documentJsonSchema(manifest: Manifest, opts: SchemaOptions = {})
                 return { ...textSchema, title: note };
             case 'color':
                 return { type: 'string', title: `${f.label} (colour, e.g. #16415e)` };
+            case 'background':
+                return { type: 'string', title: `${f.label} (CSS background — rgba(...) or linear-gradient(...))` };
             case 'image':
                 return { type: 'string', title: `${f.label} (image URL or data URI)` };
             case 'url':

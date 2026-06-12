@@ -7,6 +7,8 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = path.resolve(here, '../../..');
 /** dp-design is checked out as a sibling repo of the engine. */
 const DP_ROOT = path.resolve(REPO_ROOT, '../dp-design');
+/** pandora-box-layout (sibling repo) — the SSOT for the engine/template components (Flex/Card/…). */
+const PBL_ROOT = path.resolve(REPO_ROOT, '../pandora-box-layout');
 
 export interface ExtractTarget {
     /** Component type id — the registry key and `node.type` in saved documents. */
@@ -57,21 +59,23 @@ export interface ExtractProject {
     targets: ExtractTarget[];
 }
 
-/** Phase 1: the engine's own cross-platform primitives (currently unused). */
+/** Engine + template primitives — read from the SSOT `pandora-box-layout` sibling repo. */
 export const LAYOUT_PROJECT: ExtractProject = {
-    root: REPO_ROOT,
-    tsConfigFilePath: 'packages/layout/tsconfig.json',
+    root: PBL_ROOT,
+    tsConfigFilePath: 'tsconfig.json',
     targets: [
-        { name: 'Flex', propsType: 'FlexProps', file: 'packages/layout/src/flex.tsx', source: 'engine', category: 'Layout', action: true },
-        { name: 'Card', propsType: 'CardProps', file: 'packages/layout/src/card.tsx', source: 'engine', category: 'Layout', action: true },
-        { name: 'Overlay', propsType: 'OverlayProps', file: 'packages/layout/src/overlay.tsx', source: 'engine', category: 'Layout' },
-        { name: 'Typography', propsType: 'TypographyProps', file: 'packages/layout/src/typography.tsx', source: 'engine', category: 'Content' },
-        { name: 'MediaCaption', propsType: 'MediaCaptionProps', file: 'packages/layout/src/media-caption.tsx', source: 'engine', category: 'Content' },
-        { name: 'MediaCarousel', propsType: 'MediaCarouselProps', file: 'packages/layout/src/media-carousel.tsx', source: 'engine', category: 'Media' },
-        { name: 'HeroOverview', propsType: 'HeroOverviewProps', file: 'packages/layout/src/hero-overview.tsx', source: 'engine', category: 'Templates' },
-        { name: 'WhatsNew', propsType: 'WhatsNewProps', file: 'packages/layout/src/whats-new.tsx', source: 'engine', category: 'Templates' },
-        { name: 'UpcomingList', propsType: 'UpcomingListProps', file: 'packages/layout/src/upcoming-list.tsx', source: 'engine', category: 'Templates', dataBound: true },
-        { name: 'ServiceList', propsType: 'ServiceListProps', file: 'packages/layout/src/service-list.tsx', source: 'engine', category: 'Templates', dataBound: true },
+        { name: 'Flex', propsType: 'FlexProps', file: 'src/flex.tsx', source: 'engine', category: 'Layout', action: true },
+        { name: 'Card', propsType: 'CardProps', file: 'src/card.tsx', source: 'engine', category: 'Layout', action: true },
+        { name: 'Overlay', propsType: 'OverlayProps', file: 'src/overlay.tsx', source: 'engine', category: 'Layout' },
+        { name: 'Positioned', propsType: 'PositionedProps', file: 'src/positioned.tsx', source: 'engine', category: 'Layout' },
+        { name: 'Typography', propsType: 'TypographyProps', file: 'src/typography.tsx', source: 'engine', category: 'Content' },
+        { name: 'MediaCaption', propsType: 'MediaCaptionProps', file: 'src/media-caption.tsx', source: 'engine', category: 'Content' },
+        { name: 'MediaCarousel', propsType: 'MediaCarouselProps', file: 'src/media-carousel.tsx', source: 'engine', category: 'Media' },
+        { name: 'Swiper', propsType: 'SwiperProps', file: 'src/swiper.tsx', source: 'engine', category: 'Media' },
+        { name: 'HeroOverview', propsType: 'HeroOverviewProps', file: 'src/hero-overview.tsx', source: 'engine', category: 'Templates' },
+        { name: 'WhatsNew', propsType: 'WhatsNewProps', file: 'src/whats-new.tsx', source: 'engine', category: 'Templates' },
+        { name: 'UpcomingList', propsType: 'UpcomingListProps', file: 'src/upcoming-list.tsx', source: 'engine', category: 'Templates', dataBound: true },
+        { name: 'ServiceList', propsType: 'ServiceListProps', file: 'src/service-list.tsx', source: 'engine', category: 'Templates', dataBound: true },
     ],
 };
 
@@ -105,14 +109,15 @@ export const DP_DESIGN_PROJECT: ExtractProject = {
         { name: 'Segmented', propsType: 'SegmentedProps', file: `${DP}/segmented/index.d.ts`, source: 'dp-design', category: 'dp-design' },
         { name: 'RadioButtonGroup', propsType: 'RadioButtonGroupProps', file: `${DP}/radio-button-group/radio-button-group.tsx`, source: 'dp-design', category: 'dp-design' },
         { name: 'CheckboxButtonGroup', propsType: 'CheckboxButtonGroupProps', file: `${DP}/checkbox-button-group/checkbox-button-group.tsx`, source: 'dp-design', category: 'dp-design' },
-        { name: 'Swiper', propsType: 'SwiperProps', file: `${DP}/swiper/swiper.tsx`, source: 'dp-design', category: 'dp-design', exclude: ['children'] },
+        // Swiper is wrapped by pandora-box-layout (`src/swiper.tsx`) — full-bleed image + a builder-bindable
+        // `dots` toggle (the dp Swiper's `indicator` is a render-fn) — so it's an engine target above, not here.
     ],
 };
 
 export const PROJECTS: ExtractProject[] = [LAYOUT_PROJECT, DP_DESIGN_PROJECT];
 
-/** Single merged manifest consumed by the playground (relative to the engine root). */
-export const OUT = 'apps/playground/src/manifest.generated.json';
+/** Single merged manifest — written straight to the published `pandora-box-manifest` (sibling repo). */
+export const OUT = '../pandora-box-manifest/src/manifest.json';
 
 /** Barrel file (relative to DP root) for auto-discovering the rest of the library. */
 export const DP_BARREL = 'packages/atom-ui-mobile/src/index.ts';

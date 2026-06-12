@@ -58,7 +58,9 @@ export const puckOverrides = {
 /** Group the whole component drawer into friendly categories (covers all components). */
 export const categories = {
     templates: { title: 'Templates', components: ['HeroOverview', 'WhatsNew', 'UpcomingList', 'ServiceList'] },
-    layout: { title: 'Layout & containers', components: ['Flex', 'Card', 'Overlay', 'Typography', 'Divider', 'Collapse', 'Sheet', 'SafeArea'] },
+    // Free-layout trio: Overlay (the panel over a slide/image), Positioned (absolute x/y inside it), Flex.
+    layout: { title: 'Layout', components: ['Overlay', 'Positioned', 'Flex'] },
+    container: { title: 'Container', components: ['Card', 'Typography', 'Divider', 'Collapse', 'Sheet', 'SafeArea'] },
     content: { title: 'Content', components: ['Text', 'Tag', 'LinkCard', 'DataRow', 'Overview', 'FlightCard', 'Bill', 'Journey'] },
     media: { title: 'Media', components: ['Image', 'Swiper', 'MediaCarousel', 'MediaCaption', 'ImageViewer', 'ScrollView', 'QrCode'] },
     forms: {

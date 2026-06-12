@@ -1,25 +1,31 @@
-import * as DP from '@dragonpass/atom-ui-mobile';
-import { Card, Flex, HeroOverview, MediaCaption, MediaCarousel, Overlay, ServiceList, Typography, UpcomingList, WhatsNew } from '@lce/layout';
+import { Card, Flex, HeroOverview, MediaCaption, MediaCarousel, Overlay, Positioned, ServiceList, Swiper, Typography, UpcomingList, WhatsNew } from 'pandora-box-layout';
+import { dpRegistry } from 'pandora-box-dp';
+import { manifest as published } from 'pandora-box-manifest';
 import type { Manifest } from '@lce/manifest';
 import type { ComponentRegistry } from '@lce/runtime-react';
-import generated from './manifest.generated.json';
 
-const manifest = generated as unknown as Manifest;
-const dp = DP as Record<string, unknown>;
+const manifest = published as unknown as Manifest;
 
 /**
- * Registry built automatically from the manifest: engine containers (Flex/Card) +
- * every dp-design component resolved by name from the package namespace. Components
- * with no matching export are simply skipped.
+ * Single source of truth: dp components (pandora-box-dp) + engine templates (pandora-box-layout),
+ * keyed by manifest type id — the SAME registry the runtime renders. Manifest data comes from the
+ * published pandora-box-manifest, so the builder offers exactly what the runtime ships.
  */
-export const registry: ComponentRegistry = { Flex, Card, Overlay, Typography, MediaCaption, MediaCarousel, HeroOverview, WhatsNew, UpcomingList, ServiceList };
-for (const c of manifest.components) {
-    if (registry[c.name]) continue;
-    const comp = dp[c.name];
-    if (typeof comp === 'function' || (comp && typeof comp === 'object')) {
-        registry[c.name] = comp as ComponentRegistry[string];
-    }
-}
+export const registry: ComponentRegistry = {
+    ...(dpRegistry as unknown as ComponentRegistry),
+    Flex,
+    Card,
+    Overlay,
+    Positioned,
+    Typography,
+    MediaCaption,
+    MediaCarousel,
+    Swiper,
+    HeroOverview,
+    WhatsNew,
+    UpcomingList,
+    ServiceList,
+} as ComponentRegistry;
 
 /** Manifest limited to components we can actually render (have a registry entry). */
 export const renderableManifest: Manifest = {

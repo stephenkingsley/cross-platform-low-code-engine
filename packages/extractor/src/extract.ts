@@ -169,6 +169,7 @@ function classifyItemProp(prop: TsSymbol, loc: Node): ManifestField | null {
     if (!field) return null;
     if (field.kind === 'text') {
         if (/colou?r$/i.test(name)) field = { kind: 'color' };
+        else if (/^background$/i.test(name)) field = { kind: 'background' };
         else if (/^(src|image|imageurl|cover|avatar|photo|logo)$/i.test(name))
             field = { kind: 'image' };
         else if (/(href|url|link)$/i.test(name) && !/(image|img|photo|avatar|logo|icon|cover|thumb|src|media)/i.test(name))
@@ -265,6 +266,7 @@ function classify(prop: TsSymbol, target: ExtractTarget, loc: Node): ManifestFie
     // Heuristic upgrades to richer controls based on the prop name.
     if (field.kind === 'text') {
         if (/colou?r$/i.test(name)) field = { kind: 'color' };
+        else if (/^background$/i.test(name)) field = { kind: 'background' };
         else if (/^(src|image|imageurl|cover|avatar|photo|logo)$/i.test(name))
             field = { kind: 'image' };
         else if (/(href|url|link)$/i.test(name) && !/(image|img|photo|avatar|logo|icon|cover|thumb|src|media)/i.test(name))

@@ -13,7 +13,7 @@
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
-        "@lce/manifest": "workspace:*"
+        "pandora-box-react": "^0.3.0"
     },
     "peerDependencies": {
         "react": ">=18"
