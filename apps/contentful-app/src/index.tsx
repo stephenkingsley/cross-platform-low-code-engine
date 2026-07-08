@@ -6,7 +6,7 @@ import './puck-theme.css';
 import App from './App';
 import LocalhostWarning from './components/LocalhostWarning';
 import { PreviewPage } from './preview';
-import { configureRem } from '@lce/layout';
+import { configureRem } from 'pandora-box-layout';
 
 const container = document.getElementById('root')!;
 const root = createRoot(container);
