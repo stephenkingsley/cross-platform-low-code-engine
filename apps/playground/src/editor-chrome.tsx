@@ -3,6 +3,7 @@
  * ops / marketing users: component cards with coloured monogram chips, and the
  * component list grouped into meaningful categories (covers the whole library).
  */
+import { CustomOutline } from './outline';
 
 const LABELS: Record<string, string> = {
     LabelInput: 'Label Input',
@@ -53,11 +54,13 @@ export const puckOverrides = {
             </div>
         );
     },
+    // Interactive outline: smooth @dnd-kit drag-reorder + select + duplicate / delete (with confirm).
+    outline: () => <CustomOutline />,
 };
 
 /** Group the whole component drawer into friendly categories (covers all components). */
 export const categories = {
-    templates: { title: 'Templates', components: ['HeroOverview', 'WhatsNew', 'UpcomingList', 'ServiceList'] },
+    templates: { title: 'Templates', components: ['HeroOverview', 'FeatureCard', 'ActionCard', 'WhatsNew', 'UpcomingList', 'ServiceList'] },
     // Free-layout trio: Overlay (the panel over a slide/image), Positioned (absolute x/y inside it), Flex.
     layout: { title: 'Layout', components: ['Overlay', 'Positioned', 'Flex'] },
     container: { title: 'Container', components: ['Card', 'Typography', 'Divider', 'Collapse', 'Sheet', 'SafeArea'] },

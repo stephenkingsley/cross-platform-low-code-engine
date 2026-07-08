@@ -76,6 +76,8 @@ export const LAYOUT_PROJECT: ExtractProject = {
         { name: 'WhatsNew', propsType: 'WhatsNewProps', file: 'src/whats-new.tsx', source: 'engine', category: 'Templates' },
         { name: 'UpcomingList', propsType: 'UpcomingListProps', file: 'src/upcoming-list.tsx', source: 'engine', category: 'Templates', dataBound: true },
         { name: 'ServiceList', propsType: 'ServiceListProps', file: 'src/service-list.tsx', source: 'engine', category: 'Templates', dataBound: true },
+        { name: 'FeatureCard', propsType: 'FeatureCardProps', file: 'src/feature-card.tsx', source: 'engine', category: 'Templates', action: true },
+        { name: 'ActionCard', propsType: 'ActionCardProps', file: 'src/action-card.tsx', source: 'engine', category: 'Templates', action: true },
     ],
 };
 

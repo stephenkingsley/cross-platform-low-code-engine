@@ -1,0 +1,289 @@
+{
+  "root": {
+    "props": {}
+  },
+  "zones": {},
+  "content": [
+    {
+      "type": "Flex",
+      "props": {
+        "id": "wrap",
+        "direction": "column",
+        "align": "stretch",
+        "gap": "md",
+        "padding": "md",
+        "children": [
+          {
+            "type": "Typography",
+            "props": {
+              "id": "h",
+              "variant": "title",
+              "text": {
+                "en": "Prepare for your trip",
+                "zh": "为你的旅程做准备"
+              }
+            }
+          },
+          {
+            "type": "Card",
+            "props": {
+              "id": "c1",
+              "clipContent": true,
+              "radius": "lg",
+              "padding": "none",
+              "shadow": true,
+              "children": [
+                {
+                  "type": "Image",
+                  "props": {
+                    "id": "c1img",
+                    "src": "https://picsum.photos/seed/esimtravel/600/360",
+                    "width": "100%",
+                    "height": 172,
+                    "fit": "cover"
+                  }
+                },
+                {
+                  "type": "Positioned",
+                  "props": {
+                    "id": "c1bp",
+                    "x": 12,
+                    "y": 12,
+                    "children": [
+                      {
+                        "type": "Tag",
+                        "props": {
+                          "id": "c1tag",
+                          "children": {
+                            "en": "Popular",
+                            "zh": "热门"
+                          },
+                          "theme": "primary",
+                          "round": true
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "Flex",
+                  "props": {
+                    "id": "c1b",
+                    "direction": "column",
+                    "align": "start",
+                    "gap": "xs",
+                    "padding": "md",
+                    "children": [
+                      {
+                        "type": "Typography",
+                        "props": {
+                          "id": "c1t",
+                          "variant": "title",
+                          "size": "md",
+                          "text": {
+                            "en": "Travel connected from the moment you arrive",
+                            "zh": "落地即联网"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Typography",
+                        "props": {
+                          "id": "c1d",
+                          "variant": "body",
+                          "text": {
+                            "en": "Skip roaming fees and enjoy reliable data throughout your trip",
+                            "zh": "免漫游费，全程畅享稳定网络"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Typography",
+                        "props": {
+                          "id": "c1l",
+                          "variant": "body",
+                          "weight": "medium",
+                          "color": "linkColor",
+                          "text": {
+                            "en": "Get an eSIM",
+                            "zh": "获取 eSIM"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "type": "Card",
+            "props": {
+              "id": "c2",
+              "clipContent": true,
+              "radius": "lg",
+              "padding": "md",
+              "shadow": true,
+              "children": [
+                {
+                  "type": "Flex",
+                  "props": {
+                    "id": "c2b",
+                    "direction": "column",
+                    "align": "start",
+                    "gap": "xs",
+                    "width": 210,
+                    "children": [
+                      {
+                        "type": "Typography",
+                        "props": {
+                          "id": "c2t",
+                          "variant": "title",
+                          "size": "md",
+                          "text": {
+                            "en": "A faster way through the airport",
+                            "zh": "更快通过机场"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Typography",
+                        "props": {
+                          "id": "c2d",
+                          "variant": "body",
+                          "text": {
+                            "en": "Skip the queues through security and immigration",
+                            "zh": "免去安检与边检排队"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Typography",
+                        "props": {
+                          "id": "c2l",
+                          "variant": "body",
+                          "weight": "medium",
+                          "color": "linkColor",
+                          "text": {
+                            "en": "Book Fast Track",
+                            "zh": "预订快速通道"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "Positioned",
+                  "props": {
+                    "id": "c2p",
+                    "right": -14,
+                    "bottom": -14,
+                    "width": 122,
+                    "height": 122,
+                    "children": [
+                      {
+                        "type": "Image",
+                        "props": {
+                          "id": "c2img",
+                          "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27122%27%20height%3D%27122%27%20viewBox%3D%270%200%20122%20122%27%3E%3Crect%20x%3D%272%27%20y%3D%272%27%20width%3D%27118%27%20height%3D%27118%27%20rx%3D%2730%27%20fill%3D%27%23ECEEF1%27%20transform%3D%27rotate%28-5%2061%2061%29%27/%3E%3Ccircle%20cx%3D%2752%27%20cy%3D%2752%27%20r%3D%2728%27%20fill%3D%27%23161616%27/%3E%3Cg%20stroke%3D%27%23fff%27%20stroke-width%3D%274.6%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%20fill%3D%27none%27%3E%3Cpolyline%20points%3D%2743%2C41%2055%2C52%2043%2C63%27/%3E%3Cpolyline%20points%3D%2753%2C41%2065%2C52%2053%2C63%27/%3E%3C/g%3E%3C/svg%3E",
+                          "width": "100%",
+                          "height": "100%",
+                          "fit": "contain",
+                          "showSkeleton": false
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "type": "Card",
+            "props": {
+              "id": "c3",
+              "clipContent": true,
+              "radius": "lg",
+              "padding": "md",
+              "shadow": true,
+              "children": [
+                {
+                  "type": "Flex",
+                  "props": {
+                    "id": "c3b",
+                    "direction": "column",
+                    "align": "start",
+                    "gap": "xs",
+                    "width": 210,
+                    "children": [
+                      {
+                        "type": "Typography",
+                        "props": {
+                          "id": "c3t",
+                          "variant": "title",
+                          "size": "md",
+                          "text": {
+                            "en": "Refuel before you depart",
+                            "zh": "出发前补充能量"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Typography",
+                        "props": {
+                          "id": "c3d",
+                          "variant": "body",
+                          "text": {
+                            "en": "Use your dining voucher for a meal before your flight",
+                            "zh": "用你的餐饮券，在登机前享用一餐"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Typography",
+                        "props": {
+                          "id": "c3l",
+                          "variant": "body",
+                          "weight": "medium",
+                          "color": "linkColor",
+                          "text": {
+                            "en": "Explore airport dining",
+                            "zh": "探索机场餐饮"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "Positioned",
+                  "props": {
+                    "id": "c3p",
+                    "right": -14,
+                    "bottom": -14,
+                    "width": 122,
+                    "height": 122,
+                    "children": [
+                      {
+                        "type": "Image",
+                        "props": {
+                          "id": "c3img",
+                          "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27122%27%20height%3D%27122%27%20viewBox%3D%270%200%20122%20122%27%3E%3Crect%20x%3D%272%27%20y%3D%272%27%20width%3D%27118%27%20height%3D%27118%27%20rx%3D%2730%27%20fill%3D%27%23ECEEF1%27%20transform%3D%27rotate%28-5%2061%2061%29%27/%3E%3Cg%20stroke%3D%27%231a1a1a%27%20stroke-width%3D%273%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M40%2C30%20v12%20M46%2C30%20v12%20M52%2C30%20v12%27/%3E%3Cpath%20d%3D%27M46%2C42%20v32%27/%3E%3Cpath%20d%3D%27M68%2C30%20c-5%2C5%20-5%2C15%200%2C20%20v24%27/%3E%3C/g%3E%3C/svg%3E",
+                          "width": "100%",
+                          "height": "100%",
+                          "fit": "contain",
+                          "showSkeleton": false
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

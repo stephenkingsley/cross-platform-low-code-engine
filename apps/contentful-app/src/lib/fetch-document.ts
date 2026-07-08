@@ -15,10 +15,12 @@ export interface PageEntryFields {
  */
 export async function fetchPageEntry(
     entryId: string,
-    opts: { preview?: boolean } = {},
+    opts: { preview?: boolean; environment?: string } = {},
 ): Promise<PageEntryFields | null> {
     const space = import.meta.env.VITE_CONTENTFUL_SPACE_ID as string | undefined;
-    const env = (import.meta.env.VITE_CONTENTFUL_ENVIRONMENT as string | undefined) || 'master';
+    // Environment can be overridden per-request (the preview URL's `?environment=`), so one deployed
+    // build previews master AND uat — falls back to the baked default, then "master".
+    const env = opts.environment || (import.meta.env.VITE_CONTENTFUL_ENVIRONMENT as string | undefined) || 'master';
     const token = import.meta.env.VITE_CONTENTFUL_CPA_TOKEN as string | undefined;
     if (!space || !token) {
         throw new Error('Missing VITE_CONTENTFUL_SPACE_ID / VITE_CONTENTFUL_CPA_TOKEN (set them in .env)');

@@ -22,8 +22,10 @@ if (previewEntryId) {
     // (37.5) matches this base, so each module/font/spacing lands at its design px.
     // Contentful gives locales like "en-US" / "zh-CN"; the document's i18n uses "en" / "zh".
     const locale = (params.get('locale') ?? 'en-US').split('-')[0];
+    // Optional `?environment=` override so one build previews any env (master/uat); else the baked default.
+    const environment = params.get('environment') ?? undefined;
     document.documentElement.style.fontSize = '37.5px';
-    root.render(<PreviewPage entryId={previewEntryId} locale={locale} />);
+    root.render(<PreviewPage entryId={previewEntryId} locale={locale} environment={environment} />);
 } else {
     // Builder canvas renders at fixed design px (predictable authoring); the runtime + the preview
     // above scale the same px→rem per device (shared toRem).

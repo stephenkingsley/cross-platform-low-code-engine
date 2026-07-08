@@ -1,4 +1,4 @@
-import { Card, Flex, HeroOverview, MediaCaption, MediaCarousel, Overlay, Positioned, ServiceList, Swiper, Typography, UpcomingList, WhatsNew } from 'pandora-box-layout';
+import { ActionCard, Card, FeatureCard, Flex, HeroOverview, MediaCaption, MediaCarousel, Overlay, Positioned, ServiceList, Swiper, Typography, UpcomingList, WhatsNew } from 'pandora-box-layout';
 import { dpRegistry } from 'pandora-box-dp';
 import { manifest as published } from 'pandora-box-manifest';
 import type { Manifest } from '@lce/manifest';
@@ -25,6 +25,8 @@ export const registry: ComponentRegistry = {
     WhatsNew,
     UpcomingList,
     ServiceList,
+    FeatureCard,
+    ActionCard,
 } as ComponentRegistry;
 
 /** Manifest limited to components we can actually render (have a registry entry). */

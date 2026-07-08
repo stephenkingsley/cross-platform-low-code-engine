@@ -344,3 +344,16 @@ body,
     background: var(--lce-stage-bg) !important;
 }
 
+
+/* ── Free-positioning fidelity inside a clip-card ──────────────────────────────
+ * Puck wraps every slot child in a per-item DnD wrapper + DropZone, both
+ * `position: relative` — so an absolutely-placed child (Positioned/Overlay: a badge
+ * over a hero, a decoration bleeding off an edge) anchors to that wrapper instead of
+ * the Card, and looks misplaced while editing (it's correct at runtime, where no
+ * wrappers exist). Inside an `.lce-clip` card, neutralize those wrappers as
+ * positioning contexts so the absolute child measures from the Card — edit matches
+ * runtime. Editor-only (this sheet never loads at runtime). */
+.lce-clip [data-puck-dnd],
+.lce-clip [data-puck-dropzone] {
+    position: static !important;
+}
