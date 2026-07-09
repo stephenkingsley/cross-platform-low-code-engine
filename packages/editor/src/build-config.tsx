@@ -3,6 +3,13 @@ import type { Config, Field, Fields } from '@puckeditor/core';
 import { resolveLocalized, resolveMedia, type Action, type ComponentManifest, type DataBinding, type ManifestField, type Manifest } from '@lce/manifest';
 import { ActionField, BackgroundField, ColorField, DataMapField, ImageField, LocalizedTextField, VisibilityField, type VisibilityFlag } from './custom-fields';
 
+/**
+ * Field kinds shown as "content" (before "style") in the config panel. Content = the data a block
+ * carries (copy, media, nested slots, click behaviour); everything else (select/radio/number/
+ * colour/background) is treated as style. Panel order is Visibility → content → style.
+ */
+const CONTENT_FIELD_KINDS = new Set(['text', 'textarea', 'url', 'image', 'slot', 'array', 'action']);
+
 /** Keeps one misbehaving component from crashing the whole editor canvas. */
 class Boundary extends Component<{ name: string; children?: ReactNode }, { failed: boolean }> {
     state = { failed: false };
@@ -271,29 +278,34 @@ function resolveProp(
 
 function buildComponentConfig(c: ComponentManifest, registry: ComponentRegistry, opts: BuildOptions) {
     const Comp = registry[c.name];
+    // Panel field order: Visibility → content → style. Visibility (reserved node props, owned by
+    // the runtime walker, not component props) comes FIRST; then content fields (text/media/slots/
+    // action), then style fields (select/radio/number/colour). Puck renders fields in key order,
+    // and the render() below iterates only the manifest's `c.fields`, so the visibility keys are
+    // never forwarded to the component.
     const fields: Fields = {};
-    for (const f of c.fields) fields[f.name] = toPuckField(f, opts.locales, opts.assetPicker);
 
-    // ── Universal visibility controls (reserved node props, not component props) ──
-    // Appended AFTER the content fields so they sit at the bottom of the panel. The render()
-    // below iterates only the manifest's `c.fields`, so these are never forwarded to the
-    // component — the runtime walker owns `visibleWhen` / `hideWhenEmpty`.
+    // ── Tier 1: Visibility ──
     fields.visibleWhen = {
         type: 'custom',
         render: ({ onChange, value }: { onChange: (v: unknown) => void; value?: unknown }) =>
             createElement(VisibilityField, { value, onChange, flags: opts.flagCatalog ?? [] }),
     } as unknown as Field;
-    // Only containers (have a slot) get the "collapse when its gated content is all hidden" toggle.
     if (c.fields.some((f) => f.field.kind === 'slot')) {
         fields.hideWhenEmpty = {
             type: 'radio',
-            label: '空态收拢 · Collapse when empty',
+            label: 'Collapse when empty',
             options: [
                 { label: 'Off', value: false },
                 { label: 'On', value: true },
             ],
         } as unknown as Field;
     }
+
+    // ── Tier 2: content, then Tier 3: style (preserving manifest order within each tier) ──
+    const isContent = (f: ManifestField) => CONTENT_FIELD_KINDS.has(f.field.kind);
+    for (const f of c.fields) if (isContent(f)) fields[f.name] = toPuckField(f, opts.locales, opts.assetPicker);
+    for (const f of c.fields) if (!isContent(f)) fields[f.name] = toPuckField(f, opts.locales, opts.assetPicker);
 
     return {
         label: c.name,

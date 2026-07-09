@@ -30,7 +30,7 @@ const FLAG_CATALOG = [
 function FlagBar({ catalog, flags, onToggle }: { catalog: { key: string; label?: string }[]; flags: Record<string, boolean>; onToggle: (k: string) => void }) {
     return (
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', padding: '10px 16px', background: '#fff', borderBottom: '1px solid #eef1f4', position: 'sticky', top: 0, zIndex: 5 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b' }}>模拟权益 · Entitlements</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b' }}>Entitlements</span>
             {catalog.map((f) => {
                 const on = !!flags[f.key];
                 return (

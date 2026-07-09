@@ -91,18 +91,18 @@ export function VisibilityField({ value, onChange, flags }: VisibilityFieldProps
     const setFlag = (k: string) => onChange(mode === 'off' ? { not: k } : k);
     return (
         <div>
-            <div style={labelStyle}>显示条件 · Visibility</div>
+            <div style={labelStyle}>Visibility</div>
             <select style={{ ...inputStyle, cursor: 'pointer' }} value={mode} onChange={(e) => setMode(e.target.value)}>
-                <option value="always">总是显示 · Always show</option>
-                <option value="on">有此权益才显示 · Show when flag ON</option>
-                <option value="off">无此权益才显示 · Show when flag OFF</option>
-                {mode === 'advanced' && <option value="advanced">高级条件(在 JSON 编辑)</option>}
+                <option value="always">Always show</option>
+                <option value="on">Show when flag ON</option>
+                <option value="off">Show when flag OFF</option>
+                {mode === 'advanced' && <option value="advanced">Advanced (edit in JSON)</option>}
             </select>
             {(mode === 'on' || mode === 'off') && (
                 <div style={{ marginTop: 8 }}>
-                    <div style={subLabel}>权益 / Feature flag</div>
+                    <div style={subLabel}>Feature flag</div>
                     <select style={{ ...inputStyle, cursor: 'pointer' }} value={current} onChange={(e) => setFlag(e.target.value)}>
-                        {flags.length === 0 && <option value="">（未配置 flag 目录）</option>}
+                        {flags.length === 0 && <option value="">(no flags configured)</option>}
                         {flags.map((f) => (
                             <option key={f.key} value={f.key}>
                                 {f.label ?? f.key}
@@ -112,7 +112,7 @@ export function VisibilityField({ value, onChange, flags }: VisibilityFieldProps
                 </div>
             )}
             {mode === 'advanced' && (
-                <div style={{ ...subLabel, marginTop: 8, fontWeight: 400 }}>高级条件(all / any / equals…)— 请在顶部 {'{ } JSON'} 里编辑。</div>
+                <div style={{ ...subLabel, marginTop: 8, fontWeight: 400 }}>Advanced condition (all / any / equals…) — edit in the {'{ } JSON'} view.</div>
             )}
         </div>
     );

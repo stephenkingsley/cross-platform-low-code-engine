@@ -68,15 +68,15 @@ export function ModulesMenu() {
 
     const copySelection = async () => {
         const n = selRef.current;
-        if (!n) return flash('先选中一个区块');
+        if (!n) return flash('Select a block first');
         await writeClip(toClip([n], n.type));
-        flash('已复制到剪贴板 · Copied');
+        flash('Copied to clipboard');
     };
     const paste = async () => {
         const payload = fromClip((await readClip()) ?? '');
-        if (!payload) return flash('剪贴板没有可粘贴的 module');
+        if (!payload) return flash('Nothing to paste on the clipboard');
         insertNodes(payload.content);
-        flash('已粘贴 · Pasted');
+        flash('Pasted');
     };
 
     // global ⌘C / ⌘V (skip when editing a field)
@@ -97,11 +97,11 @@ export function ModulesMenu() {
 
     const saveSelectionAsModule = () => {
         const n = selRef.current;
-        if (!n) return flash('先选中一个区块');
-        const name = window.prompt('Module 名字 · Name this module', n.type);
+        if (!n) return flash('Select a block first');
+        const name = window.prompt('Name this module', n.type);
         if (!name) return;
         persist([...mods, { id: newModuleId(), name, content: [JSON.parse(JSON.stringify(n))], createdAt: Date.now() }]);
-        flash('已存为 module');
+        flash('Saved as module');
     };
 
     return (
@@ -117,22 +117,22 @@ export function ModulesMenu() {
                     <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
                     <div style={{ position: 'absolute', top: 38, right: 0, width: 300, maxHeight: 460, overflow: 'auto', background: 'var(--puck-color-white, #fff)', border: '1px solid var(--puck-color-grey-09, #e2e8f0)', borderRadius: 12, boxShadow: '0 12px 32px rgba(10,35,51,0.16)', zIndex: 50, padding: 8 }}>
                         <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-                            <button style={{ ...btn, flex: 1, justifyContent: 'center', opacity: selected ? 1 : 0.5 }} disabled={!selected} onClick={saveSelectionAsModule}>＋ 存为 module</button>
+                            <button style={{ ...btn, flex: 1, justifyContent: 'center', opacity: selected ? 1 : 0.5 }} disabled={!selected} onClick={saveSelectionAsModule}>＋ Save as module</button>
                         </div>
                         <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-                            <button style={{ ...btn, flex: 1, justifyContent: 'center', opacity: selected ? 1 : 0.5 }} disabled={!selected} onClick={copySelection}>⎘ 复制选中 <span style={{ opacity: 0.5, marginLeft: 4 }}>⌘C</span></button>
-                            <button style={{ ...btn, flex: 1, justifyContent: 'center' }} onClick={paste}>⤵ 粘贴 <span style={{ opacity: 0.5, marginLeft: 4 }}>⌘V</span></button>
+                            <button style={{ ...btn, flex: 1, justifyContent: 'center', opacity: selected ? 1 : 0.5 }} disabled={!selected} onClick={copySelection}>⎘ Copy selection <span style={{ opacity: 0.5, marginLeft: 4 }}>⌘C</span></button>
+                            <button style={{ ...btn, flex: 1, justifyContent: 'center' }} onClick={paste}>⤵ Paste <span style={{ opacity: 0.5, marginLeft: 4 }}>⌘V</span></button>
                         </div>
                         <div style={{ height: 1, background: 'var(--puck-color-grey-10, #f1f5f9)', margin: '4px 0 8px' }} />
-                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--puck-color-grey-06, #94a3b8)', padding: '0 4px 6px' }}>我的 Modules</div>
-                        {mods.length === 0 && <div style={{ fontSize: 12, color: 'var(--puck-color-grey-06, #94a3b8)', padding: '6px 4px' }}>还没有 —— 选中一个区块,点「存为 module」。</div>}
+                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--puck-color-grey-06, #94a3b8)', padding: '0 4px 6px' }}>My modules</div>
+                        {mods.length === 0 && <div style={{ fontSize: 12, color: 'var(--puck-color-grey-06, #94a3b8)', padding: '6px 4px' }}>None yet — select a block, then "Save as module".</div>}
                         {mods.map((m) => (
                             <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 4px', borderRadius: 8 }}>
                                 <span style={{ width: 22, height: 22, borderRadius: 6, background: 'var(--puck-color-grey-11, #f1f5f9)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#334155' }}>{(m.name[0] || 'M').toUpperCase()}</span>
                                 <span style={{ flex: 1, fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</span>
-                                <button style={{ ...rowBtn, color: 'var(--puck-color-azure-05, #2680eb)', fontWeight: 600 }} title="插入到页面" onClick={() => { insertNodes(m.content); flash('已插入 · Inserted'); }}>插入</button>
-                                <button style={rowBtn} title="复制到剪贴板(可粘到别的面板)" onClick={async () => { await writeClip(toClip(m.content, m.name)); flash('已复制到剪贴板 · Copied'); }}>⎘</button>
-                                <button style={{ ...rowBtn, color: '#e5484d' }} title="删除" onClick={() => persist(mods.filter((x) => x.id !== m.id))}>✕</button>
+                                <button style={{ ...rowBtn, color: 'var(--puck-color-azure-05, #2680eb)', fontWeight: 600 }} title="Insert into page" onClick={() => { insertNodes(m.content); flash('Inserted'); }}>Insert</button>
+                                <button style={rowBtn} title="Copy to clipboard (paste into another panel)" onClick={async () => { await writeClip(toClip(m.content, m.name)); flash('Copied to clipboard'); }}>⎘</button>
+                                <button style={{ ...rowBtn, color: '#e5484d' }} title="Delete" onClick={() => persist(mods.filter((x) => x.id !== m.id))}>✕</button>
                             </div>
                         ))}
                     </div>
