@@ -1,7 +1,7 @@
 import { Component, createElement, type ComponentType, type ReactNode } from 'react';
 import type { Config, Field, Fields } from '@puckeditor/core';
 import { resolveLocalized, resolveMedia, type Action, type ComponentManifest, type DataBinding, type ManifestField, type Manifest } from '@lce/manifest';
-import { ActionField, BackgroundField, ColorField, DataMapField, ImageField, LocalizedTextField } from './custom-fields';
+import { ActionField, BackgroundField, ColorField, DataMapField, ImageField, LocalizedTextField, VisibilityField, type VisibilityFlag } from './custom-fields';
 
 /** Keeps one misbehaving component from crashing the whole editor canvas. */
 class Boundary extends Component<{ name: string; children?: ReactNode }, { failed: boolean }> {
@@ -54,6 +54,13 @@ export interface BuildOptions {
     rootFields?: Fields;
     /** Heading for the root "PAGE" panel (defaults to Puck's "Page"). */
     rootLabel?: string;
+    /**
+     * Feature-flag catalog for the universal per-block Visibility control. When set, every block
+     * gets a "显示条件 / Visibility" field to gate it on an entitlement key; ops pick from this list
+     * (so the document's flag names always match what the server returns). Empty/undefined → the
+     * control still appears but with no flags to choose (visibility left unconfigured).
+     */
+    flagCatalog?: VisibilityFlag[];
 }
 
 /** Map one manifest field to its Puck field config. */
@@ -266,6 +273,27 @@ function buildComponentConfig(c: ComponentManifest, registry: ComponentRegistry,
     const Comp = registry[c.name];
     const fields: Fields = {};
     for (const f of c.fields) fields[f.name] = toPuckField(f, opts.locales, opts.assetPicker);
+
+    // ── Universal visibility controls (reserved node props, not component props) ──
+    // Appended AFTER the content fields so they sit at the bottom of the panel. The render()
+    // below iterates only the manifest's `c.fields`, so these are never forwarded to the
+    // component — the runtime walker owns `visibleWhen` / `hideWhenEmpty`.
+    fields.visibleWhen = {
+        type: 'custom',
+        render: ({ onChange, value }: { onChange: (v: unknown) => void; value?: unknown }) =>
+            createElement(VisibilityField, { value, onChange, flags: opts.flagCatalog ?? [] }),
+    } as unknown as Field;
+    // Only containers (have a slot) get the "collapse when its gated content is all hidden" toggle.
+    if (c.fields.some((f) => f.field.kind === 'slot')) {
+        fields.hideWhenEmpty = {
+            type: 'radio',
+            label: '空态收拢 · Collapse when empty',
+            options: [
+                { label: 'Off', value: false },
+                { label: 'On', value: true },
+            ],
+        } as unknown as Field;
+    }
 
     return {
         label: c.name,

@@ -35,6 +35,8 @@ export interface EditorProps {
     rootFields?: Fields;
     /** Heading for the root "PAGE" panel (defaults to "Page"). */
     rootLabel?: string;
+    /** Feature-flag catalog for the per-block Visibility control (entitlement keys ops gate on). */
+    flagCatalog?: BuildOptions['flagCatalog'];
 }
 
 /** Thin wrapper that turns a manifest + registry into a ready-to-use Puck editor. */
@@ -54,6 +56,7 @@ export function Editor({
     assetPicker,
     rootFields,
     rootLabel,
+    flagCatalog,
 }: EditorProps) {
     const config = useMemo(
         () =>
@@ -66,8 +69,9 @@ export function Editor({
                 assetPicker,
                 rootFields,
                 rootLabel,
+                flagCatalog,
             }),
-        [manifest, registry, canvasWrapper, categories, locale, fallbackLocale, locales, assetPicker, rootFields, rootLabel],
+        [manifest, registry, canvasWrapper, categories, locale, fallbackLocale, locales, assetPicker, rootFields, rootLabel, flagCatalog],
     );
     return (
         <Puck

@@ -13,6 +13,41 @@ const STORAGE_KEY = 'lce.doc.v14';
 const LOCALES: string[] = ['en', 'zh'];
 
 /**
+ * Feature-flag catalog — the entitlement keys ops can gate a block on (the builder's Visibility
+ * dropdown) AND the switches the Preview simulates. In production this list comes from your
+ * entitlement service / config; the server returns the SAME keys, and each block's `visibleWhen`
+ * references them by name. This one list is the entire contract between build-time and runtime.
+ */
+const FLAG_CATALOG = [
+    { key: 'esim', label: 'eSIM' },
+    { key: 'fastTrack', label: 'Fast Track' },
+    { key: 'dining', label: 'Dining voucher' },
+    { key: 'lounge', label: 'Lounge' },
+];
+
+/** Preview-only switches that simulate the server's entitlement map, so you can watch blocks show/hide. */
+function FlagBar({ catalog, flags, onToggle }: { catalog: { key: string; label?: string }[]; flags: Record<string, boolean>; onToggle: (k: string) => void }) {
+    return (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', padding: '10px 16px', background: '#fff', borderBottom: '1px solid #eef1f4', position: 'sticky', top: 0, zIndex: 5 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b' }}>模拟权益 · Entitlements</span>
+            {catalog.map((f) => {
+                const on = !!flags[f.key];
+                return (
+                    <button
+                        key={f.key}
+                        onClick={() => onToggle(f.key)}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 28, padding: '0 12px', borderRadius: 999, cursor: 'pointer', border: '1px solid', borderColor: on ? '#2680eb' : '#cbd5e1', background: on ? '#2680eb' : '#fff', color: on ? '#fff' : '#64748b', fontSize: 12.5, fontWeight: 600 }}
+                    >
+                        <span style={{ width: 8, height: 8, borderRadius: 999, background: on ? '#fff' : '#cbd5e1' }} />
+                        {f.label ?? f.key}
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+
+/**
  * Default page — a worked example built ENTIRELY from layout primitives (no bespoke
  * template): a "Prepare for your trip" card stack. Hero card = full-bleed `Image`
  * (clipped to the rounded corners via `Card.clipContent`) + a `Positioned` badge over it;
@@ -137,6 +172,9 @@ export function App() {
     const [save, setSave] = useState<Save>('saved');
     const [lang, setLang] = useState<Lang>('en');
     const [dark, setDark] = useState(false);
+    // Preview entitlement switches (default: all on). The runtime evaluates each block's
+    // `visibleWhen` against this map — toggling a chip shows/hides the gated blocks live.
+    const [flags, setFlags] = useState<Record<string, boolean>>(() => Object.fromEntries(FLAG_CATALOG.map((f) => [f.key, true])));
     const dataRef = useRef<Data>(data);
     const timer = useRef<number | undefined>(undefined);
 
@@ -234,6 +272,7 @@ export function App() {
                             locale={lang}
                             fallbackLocale="en"
                             locales={LOCALES}
+                            flagCatalog={FLAG_CATALOG}
                             onChange={scheduleSave}
                             onPublish={(d) => {
                                 dataRef.current = d;
@@ -245,10 +284,12 @@ export function App() {
                         />
                     ) : (
                         <div style={{ height: '100%', overflow: 'auto', background: 'var(--lce-stage-bg, #eef1f4)' }}>
-                            {/* The published page rendered by the standalone runtime component —
-                                give it the document JSON + locale, it renders. No Puck, no editor. */}
+                            {/* Simulate the server's entitlements; the runtime hides gated blocks accordingly. */}
+                            <FlagBar catalog={FLAG_CATALOG} flags={flags} onToggle={(k) => setFlags((f) => ({ ...f, [k]: !f[k] }))} />
+                            {/* The published page rendered by the standalone runtime component — give it the
+                                document JSON + locale + entitlement flags, it renders. No Puck, no editor. */}
                             <DpPage>
-                                <PageRuntime doc={data as unknown as DocData} locale={lang} fallbackLocale="en" />
+                                <PageRuntime doc={data as unknown as DocData} locale={lang} fallbackLocale="en" flags={flags} />
                             </DpPage>
                         </div>
                     )}

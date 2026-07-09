@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { DpPage } from '@lce/components-dp';
-import { Render } from '@lce/runtime-react';
+import { Render, type Manifest } from '@lce/runtime-react';
 import type { DocData } from '@lce/manifest';
 import { fetchPageEntry } from './lib/fetch-document';
 import { registry, renderableManifest } from './registry';
@@ -50,7 +50,7 @@ export function PreviewPage({ entryId, locale, environment }: { entryId: string;
                 <Render
                     data={doc}
                     registry={registry}
-                    manifest={renderableManifest}
+                    manifest={renderableManifest as unknown as Manifest}
                     locale={locale}
                     fallbackLocale="en"
                     onAction={(action) => {

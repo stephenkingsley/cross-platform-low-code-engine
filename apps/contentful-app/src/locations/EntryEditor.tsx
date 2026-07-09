@@ -12,6 +12,19 @@ import { categories, puckOverrides } from '../editor-chrome';
 
 const LOCALES = ['en', 'zh'];
 
+/**
+ * Feature-flag catalog for the per-block Visibility control. In production, source this from
+ * your entitlement config (or a Contentful entry) so it matches what the server returns; each
+ * block's `visibleWhen` references these keys and the runtime hides blocks the user isn't
+ * entitled to (the app passes the fetched flags to the runtime).
+ */
+const FLAG_CATALOG = [
+    { key: 'esim', label: 'eSIM' },
+    { key: 'fastTrack', label: 'Fast Track' },
+    { key: 'dining', label: 'Dining voucher' },
+    { key: 'lounge', label: 'Lounge' },
+];
+
 /** name → url-safe slug (lowercase, non-alphanumerics → single hyphen, trimmed). */
 function slugify(s: string): string {
     return s
@@ -157,6 +170,7 @@ const Entry = () => {
                     fallbackLocale="en"
                     locales={LOCALES}
                     assetPicker={onPickImage}
+                    flagCatalog={FLAG_CATALOG}
                 />
             </main>
         </div>

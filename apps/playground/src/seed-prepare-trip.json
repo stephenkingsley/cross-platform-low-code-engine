@@ -12,6 +12,7 @@
         "align": "stretch",
         "gap": "md",
         "padding": "md",
+        "hideWhenEmpty": true,
         "children": [
           {
             "type": "Typography",
@@ -32,6 +33,7 @@
               "radius": "lg",
               "padding": "none",
               "shadow": true,
+              "visibleWhen": "esim",
               "children": [
                 {
                   "type": "Image",
@@ -124,6 +126,7 @@
               "radius": "lg",
               "padding": "md",
               "shadow": true,
+              "visibleWhen": "fastTrack",
               "children": [
                 {
                   "type": "Flex",
@@ -207,6 +210,7 @@
               "radius": "lg",
               "padding": "md",
               "shadow": true,
+              "visibleWhen": "dining",
               "children": [
                 {
                   "type": "Flex",
