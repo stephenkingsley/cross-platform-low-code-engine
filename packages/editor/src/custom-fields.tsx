@@ -83,6 +83,7 @@ export function VisibilityField({ value, onChange, flags }: VisibilityFieldProps
     const { mode, flag } = parseVisibility(value);
     const firstFlag = flags[0]?.key ?? '';
     const current = flag ?? firstFlag;
+    const matched = flags.find((f) => f.key === current);
     const setMode = (m: string) => {
         if (m === 'always') onChange(undefined);
         else if (m === 'on') onChange(current);
@@ -100,15 +101,28 @@ export function VisibilityField({ value, onChange, flags }: VisibilityFieldProps
             </select>
             {(mode === 'on' || mode === 'off') && (
                 <div style={{ marginTop: 8 }}>
-                    <div style={subLabel}>Feature flag</div>
-                    <select style={{ ...inputStyle, cursor: 'pointer' }} value={current} onChange={(e) => setFlag(e.target.value)}>
-                        {flags.length === 0 && <option value="">(no flags configured)</option>}
+                    <div style={subLabel}>Feature flag (the key the server returns)</div>
+                    {/* Combobox: presets are suggestions, but any custom key can be typed. The input
+                        shows/stores the actual flag KEY (not a friendly label), so it's never ambiguous. */}
+                    <input
+                        list="lce-flag-catalog"
+                        style={inputStyle}
+                        value={current}
+                        placeholder="e.g. fastTrack"
+                        spellCheck={false}
+                        autoComplete="off"
+                        onChange={(e) => setFlag(e.target.value.trim())}
+                    />
+                    <datalist id="lce-flag-catalog">
                         {flags.map((f) => (
                             <option key={f.key} value={f.key}>
-                                {f.label ?? f.key}
+                                {f.label && f.label !== f.key ? f.label : ''}
                             </option>
                         ))}
-                    </select>
+                    </datalist>
+                    <div style={{ ...subLabel, marginTop: 4, fontWeight: 400 }}>
+                        {matched ? `= ${matched.label ?? matched.key}` : current ? 'custom flag' : 'type or pick a flag key'}
+                    </div>
                 </div>
             )}
             {mode === 'advanced' && (
