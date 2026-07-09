@@ -2,13 +2,14 @@ import { EditorAppSDK } from '@contentful/app-sdk';
 import { Note } from '@contentful/f36-components';
 import { useSDK } from '@contentful/react-apps-toolkit';
 import { FieldLabel, usePuck, type Data, type Fields } from '@puckeditor/core';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { DpPage } from '@lce/components-dp';
 import { Editor } from '@lce/editor';
 import { pickContentfulAsset } from '../lib/contentful-assets';
 import { useDocumentField, type DocData } from '../lib/useDocumentField';
 import { registry, renderableManifest } from '../registry';
 import { categories, puckOverrides } from '../editor-chrome';
+import { ModulesMenu } from '../ModulesMenu';
 
 const LOCALES = ['en', 'zh'];
 
@@ -162,7 +163,15 @@ const Entry = () => {
                     onChange={onChange}
                     canvasWrapper={DpPage}
                     iframe={false}
-                    overrides={puckOverrides}
+                    overrides={{
+                        ...puckOverrides,
+                        headerActions: ({ children }: { children: ReactNode }) => (
+                            <>
+                                <ModulesMenu />
+                                {children}
+                            </>
+                        ),
+                    }}
                     categories={categories}
                     rootFields={ROOT_FIELDS}
                     rootLabel="Page settings"

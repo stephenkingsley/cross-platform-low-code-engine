@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Data } from '@puckeditor/core';
 import { Editor } from '@lce/editor';
 import { PageRuntime } from './page-runtime';
@@ -6,6 +6,7 @@ import { DpConfig, DpPage } from '@lce/components-dp';
 import { documentJsonSchema, type DocData } from '@lce/manifest';
 import { registry, renderableManifest as manifest } from './registry';
 import { categories, puckOverrides } from './editor-chrome';
+import { ModulesMenu } from './ModulesMenu';
 import seedPrepareTrip from './seed-prepare-trip.json';
 const STORAGE_KEY = 'lce.doc.v14';
 
@@ -267,7 +268,17 @@ export function App() {
                             data={data}
                             canvasWrapper={DpPage}
                             iframe={false}
-                            overrides={puckOverrides}
+                            overrides={{
+                                ...puckOverrides,
+                                // Add the reusable-Modules menu (save / copy / paste) to the header,
+                                // keeping Puck's default header actions (Publish, …).
+                                headerActions: ({ children }: { children: ReactNode }) => (
+                                    <>
+                                        <ModulesMenu />
+                                        {children}
+                                    </>
+                                ),
+                            }}
                             categories={categories}
                             locale={lang}
                             fallbackLocale="en"
