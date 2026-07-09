@@ -10,6 +10,8 @@
  *      DIFFERENT builder panel / tab / machine with no shared store.
  */
 
+import presetModules from './module-presets.json';
+
 /** A document node (loosely typed — `{ type, props }`, props may hold slot child arrays). */
 export interface Node {
     type: string;
@@ -24,7 +26,12 @@ export interface ModuleDef {
     icon?: string;
     content: Node[];
     createdAt: number;
+    /** Built-in starter module — always present, not persisted, not deletable. */
+    preset?: boolean;
 }
+
+/** Built-in starter modules (a big-image card + a standard action card), shipped as data. */
+export const PRESET_MODULES = presetModules as unknown as ModuleDef[];
 
 /** Puck's root content zone id (`${rootAreaId}:${rootZone}`). */
 export const ROOT_ZONE = 'root:default-zone';
@@ -78,15 +85,18 @@ export function findNodeBySelector(content: Node[], sel: { index: number; zone?:
 
 // ── persistent library ─────────────────────────────────────────────────────
 export function loadModules(): ModuleDef[] {
+    let saved: ModuleDef[] = [];
     try {
         const raw = localStorage.getItem(LIB_KEY);
-        return raw ? (JSON.parse(raw) as ModuleDef[]) : [];
+        saved = raw ? (JSON.parse(raw) as ModuleDef[]) : [];
     } catch {
-        return [];
+        saved = [];
     }
+    // Built-in presets always come first; only the user's own modules are persisted.
+    return [...PRESET_MODULES, ...saved.filter((m) => !m.preset)];
 }
 export function saveModules(mods: ModuleDef[]): void {
-    localStorage.setItem(LIB_KEY, JSON.stringify(mods));
+    localStorage.setItem(LIB_KEY, JSON.stringify(mods.filter((m) => !m.preset)));
 }
 export function newModuleId(): string {
     return `mod-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;

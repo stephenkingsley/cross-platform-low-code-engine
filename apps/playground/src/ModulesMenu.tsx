@@ -132,7 +132,11 @@ export function ModulesMenu() {
                                 <span style={{ flex: 1, fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</span>
                                 <button style={{ ...rowBtn, color: 'var(--puck-color-azure-05, #2680eb)', fontWeight: 600 }} title="Insert into page" onClick={() => { insertNodes(m.content); flash('Inserted'); }}>Insert</button>
                                 <button style={rowBtn} title="Copy to clipboard (paste into another panel)" onClick={async () => { await writeClip(toClip(m.content, m.name)); flash('Copied to clipboard'); }}>⎘</button>
-                                <button style={{ ...rowBtn, color: '#e5484d' }} title="Delete" onClick={() => persist(mods.filter((x) => x.id !== m.id))}>✕</button>
+                                {m.preset ? (
+                                    <span style={{ ...rowBtn, cursor: 'default', opacity: 0.55, fontSize: 10, fontWeight: 700 }} title="Built-in preset">preset</span>
+                                ) : (
+                                    <button style={{ ...rowBtn, color: '#e5484d' }} title="Delete" onClick={() => persist(mods.filter((x) => x.id !== m.id))}>✕</button>
+                                )}
                             </div>
                         ))}
                     </div>
