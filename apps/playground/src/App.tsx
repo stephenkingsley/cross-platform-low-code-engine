@@ -272,9 +272,9 @@ export function App() {
                             iframe={false}
                             overrides={{
                                 ...puckOverrides,
-                                // Add the reusable-Modules menu (save / copy / paste) to the header,
-                                // keeping Puck's default header actions (Publish, …).
-                                headerActions: ({ children }: { children: ReactNode }) => (
+                                // Reusable modules live in the left blocks drawer (with the templates),
+                                // above the component categories — not in a header menu.
+                                drawer: ({ children }: { children: ReactNode }) => (
                                     <>
                                         <ModulesMenu />
                                         {children}

@@ -167,7 +167,7 @@ const Entry = () => {
                     iframe={false}
                     overrides={{
                         ...puckOverrides,
-                        headerActions: ({ children }: { children: ReactNode }) => (
+                        drawer: ({ children }: { children: ReactNode }) => (
                             <>
                                 <ModulesMenu />
                                 {children}
