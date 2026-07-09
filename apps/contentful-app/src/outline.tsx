@@ -17,25 +17,12 @@ import {
     useSensor,
     useSensors,
     type DragEndEvent,
-    type CollisionDetection,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 
 const ROOT_ZONE = 'root:default-zone';
-
-/**
- * Reorder is sibling-only, so only consider drop targets in the dragged item's OWN zone.
- * This both makes the drop land on a real sibling (not a nested child) AND keeps the visual
- * reflow limited to siblings.
- */
-const sameZoneCollision: CollisionDetection = (args) => {
-    const zone = (args.active?.data?.current as { zone?: string } | undefined)?.zone;
-    if (zone == null) return closestCenter(args);
-    const droppableContainers = args.droppableContainers.filter((c) => (c.data?.current as { zone?: string } | undefined)?.zone === zone);
-    return closestCenter({ ...args, droppableContainers });
-};
 
 const LABELS: Record<string, string> = {
     HeroOverview: 'Hero overview',
@@ -70,6 +57,35 @@ function containerOf(content: Item[], path: PathStep[]): Item[] {
     let arr: Item[] = content;
     for (const [idx, key] of path) arr = arr[idx].props[key] as Item[];
     return arr;
+}
+
+/** Find a node by its `props.id`, searching every slot (used for cross-zone moves). */
+function findNodeById(nodes: Item[], id: string): Item | null {
+    for (const n of nodes) {
+        if (n.props?.id === id) return n;
+        for (const [, v] of slotEntries(n)) {
+            const f = findNodeById(v, id);
+            if (f) return f;
+        }
+    }
+    return null;
+}
+/** Find the array + index that directly holds a node with `id`. */
+function findLoc(nodes: Item[], id: string): { arr: Item[]; index: number } | null {
+    for (let i = 0; i < nodes.length; i++) {
+        if (nodes[i].props?.id === id) return { arr: nodes, index: i };
+        for (const [, v] of slotEntries(nodes[i])) {
+            const r = findLoc(v, id);
+            if (r) return r;
+        }
+    }
+    return null;
+}
+/** True when `id` is `node` itself or anywhere inside its subtree (cycle guard for moves). */
+function subtreeContains(node: Item, id: string): boolean {
+    if (node.props?.id === id) return true;
+    for (const [, v] of slotEntries(node)) for (const c of v) if (subtreeContains(c, id)) return true;
+    return false;
 }
 
 let dupSeq = 0;
@@ -114,7 +130,7 @@ function Row({ item, zone, index, path, depth, ctx }: { item: Item; zone: string
     const id = (item.props.id as string) ?? `${zone}-${index}`;
     const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
         id,
-        data: { zone, index, path },
+        data: { id, type: item.type, zone, index, path },
     });
     const selected = ctx.selKey === `${zone}#${index}`;
     const isHover = ctx.hover === id;
@@ -203,8 +219,15 @@ export function CustomOutline() {
     const puck = usePuck() as unknown as {
         appState: { data: { content?: Item[] }; ui: { itemSelector?: { index: number; zone?: string } } };
         dispatch: (action: Record<string, unknown>) => void;
+        config: { components?: Record<string, { fields?: Record<string, { type?: string }> }> };
     };
     const { appState, dispatch } = puck;
+    /** The slot prop name of a component type (→ its children zone), or null if it's not a container. */
+    const slotKeyOf = (type: string): string | null => {
+        const fields = puck.config?.components?.[type]?.fields ?? {};
+        for (const [k, f] of Object.entries(fields)) if (f?.type === 'slot') return k;
+        return null;
+    };
     const content = appState.data.content ?? [];
     const sel = appState.ui.itemSelector;
     const selKey = sel != null ? `${sel.zone ?? ROOT_ZONE}#${sel.index}` : null;
@@ -241,13 +264,50 @@ export function CustomOutline() {
     const onDragEnd = (e: DragEndEvent) => {
         const { active, over } = e;
         if (!over || active.id === over.id) return;
-        const a = active.data.current as { zone: string; index: number; path: PathStep[] } | undefined;
-        const o = over.data.current as { zone: string; index: number } | undefined;
-        if (!a || !o || a.zone !== o.zone) return; // only reorder within the same parent
+        const a = active.data.current as { id: string; type: string; zone: string; index: number; path: PathStep[] } | undefined;
+        const o = over.data.current as { id: string; type: string; zone: string; index: number; path: PathStep[] } | undefined;
+        if (!a || !o) return;
+
+        // ── Same parent → plain reorder (smooth path, unchanged) ──
+        if (a.zone === o.zone) {
+            editData((c) => {
+                const arr = containerOf(c, a.path);
+                const [it] = arr.splice(a.index, 1);
+                arr.splice(o.index, 0, it);
+            });
+            return;
+        }
+
+        // ── Cross-zone MOVE (e.g. drag a Card into a Flex) ──
+        // Drop onto a CONTAINER → nest into its slot; drop onto a leaf → drop into that leaf's
+        // container at the leaf's position. Both put the node inside the target's parent. Never
+        // drop a node into its own subtree.
+        const overSlot = slotKeyOf(o.type);
         editData((c) => {
-            const arr = containerOf(c, a.path);
-            const [it] = arr.splice(a.index, 1);
-            arr.splice(o.index, 0, it);
+            const activeNode = findNodeById(c, a.id);
+            if (!activeNode || subtreeContains(activeNode, o.id)) return; // cycle guard
+            const src = findLoc(c, a.id);
+            if (!src) return;
+            const [node] = src.arr.splice(src.index, 1);
+            if (overSlot) {
+                // nest into the container (append to its slot)
+                const overNode = findNodeById(c, o.id);
+                if (!overNode) {
+                    src.arr.splice(src.index, 0, node); // target vanished → undo
+                    return;
+                }
+                const slot = (overNode.props[overSlot] as Item[] | undefined) ?? [];
+                slot.push(node);
+                overNode.props[overSlot] = slot;
+            } else {
+                // drop as a sibling of the leaf, in the leaf's container
+                const dst = findLoc(c, o.id);
+                if (!dst) {
+                    src.arr.splice(src.index, 0, node);
+                    return;
+                }
+                dst.arr.splice(dst.index, 0, node);
+            }
         });
     };
 
@@ -257,7 +317,7 @@ export function CustomOutline() {
 
     return (
         <div style={{ padding: '6px 4px' }}>
-            <DndContext sensors={sensors} collisionDetection={sameZoneCollision} modifiers={[restrictToVerticalAxis]} onDragEnd={onDragEnd}>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis]} onDragEnd={onDragEnd}>
                 <Zone items={content} zone={ROOT_ZONE} path={[]} depth={0} ctx={ctx} />
             </DndContext>
         </div>
