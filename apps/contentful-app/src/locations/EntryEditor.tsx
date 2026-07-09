@@ -21,9 +21,9 @@ const LOCALES = ['en', 'zh'];
  */
 const FLAG_CATALOG = [
     { key: 'Lounge' },
-    { key: 'Fast Track' },
+    { key: 'FastTrack' },
     { key: 'Limo' },
-    { key: 'Local Offer' },
+    { key: 'localOffer' },
     { key: 'Dining' },
     { key: 'eSIM' },
 ];

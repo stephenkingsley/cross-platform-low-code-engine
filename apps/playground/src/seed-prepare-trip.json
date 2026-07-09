@@ -126,7 +126,7 @@
               "radius": "lg",
               "padding": "md",
               "shadow": true,
-              "visibleWhen": "Fast Track",
+              "visibleWhen": "FastTrack",
               "children": [
                 {
                   "type": "Flex",
