@@ -20,12 +20,12 @@ const LOCALES: string[] = ['en', 'zh'];
  * references them by name. This one list is the entire contract between build-time and runtime.
  */
 const FLAG_CATALOG = [
-    { key: 'lounge', label: 'Lounge' },
-    { key: 'fastTrack', label: 'Fast Track' },
-    { key: 'limo', label: 'Limo' },
-    { key: 'localOffer', label: 'Local Offer' },
-    { key: 'dining', label: 'Dining' },
-    { key: 'esim', label: 'eSIM' },
+    { key: 'Lounge' },
+    { key: 'Fast Track' },
+    { key: 'Limo' },
+    { key: 'Local Offer' },
+    { key: 'Dining' },
+    { key: 'eSIM' },
 ];
 
 /** Preview-only switches that simulate the server's entitlement map, so you can watch blocks show/hide. */

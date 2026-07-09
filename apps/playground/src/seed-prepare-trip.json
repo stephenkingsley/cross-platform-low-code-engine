@@ -33,7 +33,7 @@
               "radius": "lg",
               "padding": "none",
               "shadow": true,
-              "visibleWhen": "esim",
+              "visibleWhen": "eSIM",
               "children": [
                 {
                   "type": "Image",
@@ -126,7 +126,7 @@
               "radius": "lg",
               "padding": "md",
               "shadow": true,
-              "visibleWhen": "fastTrack",
+              "visibleWhen": "Fast Track",
               "children": [
                 {
                   "type": "Flex",
@@ -210,7 +210,7 @@
               "radius": "lg",
               "padding": "md",
               "shadow": true,
-              "visibleWhen": "dining",
+              "visibleWhen": "Dining",
               "children": [
                 {
                   "type": "Flex",

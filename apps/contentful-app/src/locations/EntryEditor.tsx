@@ -20,12 +20,12 @@ const LOCALES = ['en', 'zh'];
  * entitled to (the app passes the fetched flags to the runtime).
  */
 const FLAG_CATALOG = [
-    { key: 'lounge', label: 'Lounge' },
-    { key: 'fastTrack', label: 'Fast Track' },
-    { key: 'limo', label: 'Limo' },
-    { key: 'localOffer', label: 'Local Offer' },
-    { key: 'dining', label: 'Dining' },
-    { key: 'esim', label: 'eSIM' },
+    { key: 'Lounge' },
+    { key: 'Fast Track' },
+    { key: 'Limo' },
+    { key: 'Local Offer' },
+    { key: 'Dining' },
+    { key: 'eSIM' },
 ];
 
 /** name → url-safe slug (lowercase, non-alphanumerics → single hyphen, trimmed). */
