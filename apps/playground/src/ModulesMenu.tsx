@@ -11,6 +11,15 @@ import { useEffect, useRef, useState } from 'react';
 import { usePuck } from '@puckeditor/core';
 import { PRESET_MODULES, cloneWithNewIds, findNodeBySelector, fromClip, readClip, toClip, writeClip, type Node } from './modules';
 
+/** A small "add" glyph — signals these cards are click-to-add (matches editor-chrome's AddIcon). */
+function AddIcon() {
+    return (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden style={{ color: 'var(--puck-color-grey-07, #94a3b8)', display: 'block' }}>
+            <path d="M12 5v14M5 12h14" />
+        </svg>
+    );
+}
+
 /** Stable hue per name — matches the template drawer's monogram chips (editor-chrome hueOf). */
 function hueOf(name: string): number {
     let h = 0;
@@ -99,13 +108,13 @@ export function ModulesMenu() {
                     const h = hueOf(m.name);
                     return (
                         <div key={m.id} style={{ padding: '3px 0' }}>
-                            <div className="lce-block" style={{ cursor: 'pointer' }} title="Click to insert into the page" onClick={() => insertNodes(m.content)}>
+                            <div className="lce-block" style={{ cursor: 'pointer' }} title="Click to add" onClick={() => insertNodes(m.content)}>
                                 <span className="lce-block__chip" style={{ background: `hsl(${h} 70% 93%)`, color: `hsl(${h} 55% 32%)` }}>
                                     {(m.name[0] || 'M').toUpperCase()}
                                 </span>
                                 <span className="lce-block__name">{m.name}</span>
-                                <span className="lce-block__grip" aria-hidden>
-                                    ⠿
+                                <span className="lce-block__grip" aria-hidden style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                    <AddIcon />
                                 </span>
                             </div>
                         </div>

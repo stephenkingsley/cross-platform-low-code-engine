@@ -39,13 +39,26 @@ function hueOf(name: string): number {
     return h;
 }
 
+/** A small "add" glyph — signals click-to-add on the high-level block cards (vs the drag grip). */
+function AddIcon() {
+    return (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden style={{ color: 'var(--puck-color-grey-07, #94a3b8)', display: 'block' }}>
+            <path d="M12 5v14M5 12h14" />
+        </svg>
+    );
+}
+
 /**
  * One drawer block, rendered as a polished card. Besides Puck's native drag-to-canvas, it also
  * supports CLICK-to-add: a plain click appends the component to the end of the page (same as the
  * Modules cards). A drag is unaffected — dnd-kit only treats it as a drag once the pointer moves
  * past its activation distance, and it suppresses the trailing click, so drag never double-inserts.
+ * High-level blocks (Templates) show a ➕ to signal click-to-add; primitives keep the drag grip.
  */
 function DrawerBlockCard({ name }: { name: string }) {
+    // Templates are the high-level "click to add" blocks (referenced lazily — `categories` is
+    // declared lower in this file, and this runs at render time, after the module has initialised).
+    const clickAdd = categories.templates.components.includes(name);
     const { appState, dispatch } = usePuck() as unknown as {
         appState: { data: { content?: unknown[] } };
         dispatch: (a: Record<string, unknown>) => void;
@@ -63,7 +76,7 @@ function DrawerBlockCard({ name }: { name: string }) {
         <div
             className="lce-block"
             data-block={name}
-            title="Click to add · drag to place"
+            title={clickAdd ? 'Click to add' : 'Click to add · drag to place'}
             style={{ cursor: 'pointer' }}
             onPointerDown={(e) => (down.current = { x: e.clientX, y: e.clientY })}
             onClick={(e) => {
@@ -76,9 +89,15 @@ function DrawerBlockCard({ name }: { name: string }) {
                 {name[0]}
             </span>
             <span className="lce-block__name">{labelOf(name)}</span>
-            <span className="lce-block__grip" aria-hidden>
-                ⠿
-            </span>
+            {clickAdd ? (
+                <span className="lce-block__grip" aria-hidden style={{ display: 'inline-flex', alignItems: 'center' }}>
+                    <AddIcon />
+                </span>
+            ) : (
+                <span className="lce-block__grip" aria-hidden>
+                    ⠿
+                </span>
+            )}
         </div>
     );
 }
