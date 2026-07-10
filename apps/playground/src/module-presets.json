@@ -82,10 +82,6 @@
                     "type": "Flex",
                     "props": {
                       "id": "c1l-tap",
-                      "action": {
-                        "type": "navigate",
-                        "href": "#get-esim"
-                      },
                       "direction": "row",
                       "align": "start",
                       "gap": "none",
@@ -166,10 +162,6 @@
                     "type": "Flex",
                     "props": {
                       "id": "c2l-tap",
-                      "action": {
-                        "type": "navigate",
-                        "href": "#book-fast-track"
-                      },
                       "direction": "row",
                       "align": "start",
                       "gap": "none",
