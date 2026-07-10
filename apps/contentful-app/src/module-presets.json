@@ -147,16 +147,32 @@
                     }
                   },
                   {
-                    "type": "Typography",
+                    "type": "Flex",
                     "props": {
-                      "id": "c2l",
-                      "variant": "body",
-                      "weight": "medium",
-                      "color": "linkColor",
-                      "text": {
-                        "en": "Book Fast Track",
-                        "zh": "预订快速通道"
-                      }
+                      "id": "c2l-tap",
+                      "action": {
+                        "type": "navigate",
+                        "href": "#book-fast-track"
+                      },
+                      "direction": "row",
+                      "align": "start",
+                      "gap": "none",
+                      "padding": "none",
+                      "children": [
+                        {
+                          "type": "Typography",
+                          "props": {
+                            "id": "c2l",
+                            "variant": "body",
+                            "weight": "medium",
+                            "color": "linkColor",
+                            "text": {
+                              "en": "Book Fast Track",
+                              "zh": "预订快速通道"
+                            }
+                          }
+                        }
+                      ]
                     }
                   }
                 ]

@@ -302,7 +302,19 @@ export function App() {
                             {/* The published page rendered by the standalone runtime component — give it the
                                 document JSON + locale + entitlement flags, it renders. No Puck, no editor. */}
                             <DpPage>
-                                <PageRuntime doc={data as unknown as DocData} locale={lang} fallbackLocale="en" flags={flags} />
+                                <PageRuntime
+                                    doc={data as unknown as DocData}
+                                    locale={lang}
+                                    fallbackLocale="en"
+                                    flags={flags}
+                                    onAction={(action) => {
+                                        // Demo dispatcher — a real host navigates / emits app events here.
+                                        // eslint-disable-next-line no-console
+                                        console.log('[action]', action);
+                                        if (action.type === 'navigate') window.alert(`Navigate → ${action.href}`);
+                                        else window.alert(`Event → ${action.name}`);
+                                    }}
+                                />
                             </DpPage>
                         </div>
                     )}
