@@ -100,16 +100,32 @@
                         }
                       },
                       {
-                        "type": "Typography",
+                        "type": "Flex",
                         "props": {
-                          "id": "c1l",
-                          "variant": "body",
-                          "weight": "medium",
-                          "color": "linkColor",
-                          "text": {
-                            "en": "Get an eSIM",
-                            "zh": "获取 eSIM"
-                          }
+                          "id": "c1l-tap",
+                          "action": {
+                            "type": "navigate",
+                            "href": "#get-esim"
+                          },
+                          "direction": "row",
+                          "align": "start",
+                          "gap": "none",
+                          "padding": "none",
+                          "children": [
+                            {
+                              "type": "Typography",
+                              "props": {
+                                "id": "c1l",
+                                "variant": "body",
+                                "weight": "medium",
+                                "color": "linkColor",
+                                "text": {
+                                  "en": "Get an eSIM",
+                                  "zh": "获取 eSIM"
+                                }
+                              }
+                            }
+                          ]
                         }
                       }
                     ]
