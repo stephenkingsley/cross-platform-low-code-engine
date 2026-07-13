@@ -1,7 +1,14 @@
 import { Component, createElement, type ComponentType, type ReactNode } from 'react';
 import type { Config, Field, Fields } from '@puckeditor/core';
 import { resolveLocalized, resolveMedia, type Action, type ComponentManifest, type DataBinding, type ManifestField, type Manifest } from '@lce/manifest';
-import { ActionField, BackgroundField, ColorField, DataMapField, ImageField, LocalizedTextField } from './custom-fields';
+import { ActionField, BackgroundField, ColorField, DataMapField, ImageField, LocalizedTextField, VisibilityField, type VisibilityFlag } from './custom-fields';
+
+/**
+ * Field kinds shown as "content" (before "style") in the config panel. Content = the data a block
+ * carries (copy, media, nested slots, click behaviour); everything else (select/radio/number/
+ * colour/background) is treated as style. Panel order is Visibility → content → style.
+ */
+const CONTENT_FIELD_KINDS = new Set(['text', 'textarea', 'url', 'image', 'slot', 'array', 'action']);
 
 /** Keeps one misbehaving component from crashing the whole editor canvas. */
 class Boundary extends Component<{ name: string; children?: ReactNode }, { failed: boolean }> {
@@ -54,6 +61,13 @@ export interface BuildOptions {
     rootFields?: Fields;
     /** Heading for the root "PAGE" panel (defaults to Puck's "Page"). */
     rootLabel?: string;
+    /**
+     * Feature-flag catalog for the universal per-block Visibility control. When set, every block
+     * gets a "显示条件 / Visibility" field to gate it on an entitlement key; ops pick from this list
+     * (so the document's flag names always match what the server returns). Empty/undefined → the
+     * control still appears but with no flags to choose (visibility left unconfigured).
+     */
+    flagCatalog?: VisibilityFlag[];
 }
 
 /** Map one manifest field to its Puck field config. */
@@ -264,8 +278,34 @@ function resolveProp(
 
 function buildComponentConfig(c: ComponentManifest, registry: ComponentRegistry, opts: BuildOptions) {
     const Comp = registry[c.name];
+    // Panel field order: Visibility → content → style. Visibility (reserved node props, owned by
+    // the runtime walker, not component props) comes FIRST; then content fields (text/media/slots/
+    // action), then style fields (select/radio/number/colour). Puck renders fields in key order,
+    // and the render() below iterates only the manifest's `c.fields`, so the visibility keys are
+    // never forwarded to the component.
     const fields: Fields = {};
-    for (const f of c.fields) fields[f.name] = toPuckField(f, opts.locales, opts.assetPicker);
+
+    // ── Tier 1: Visibility ──
+    fields.visibleWhen = {
+        type: 'custom',
+        render: ({ onChange, value }: { onChange: (v: unknown) => void; value?: unknown }) =>
+            createElement(VisibilityField, { value, onChange, flags: opts.flagCatalog ?? [] }),
+    } as unknown as Field;
+    if (c.fields.some((f) => f.field.kind === 'slot')) {
+        fields.hideWhenEmpty = {
+            type: 'radio',
+            label: 'Collapse when empty',
+            options: [
+                { label: 'Off', value: false },
+                { label: 'On', value: true },
+            ],
+        } as unknown as Field;
+    }
+
+    // ── Tier 2: content, then Tier 3: style (preserving manifest order within each tier) ──
+    const isContent = (f: ManifestField) => CONTENT_FIELD_KINDS.has(f.field.kind);
+    for (const f of c.fields) if (isContent(f)) fields[f.name] = toPuckField(f, opts.locales, opts.assetPicker);
+    for (const f of c.fields) if (!isContent(f)) fields[f.name] = toPuckField(f, opts.locales, opts.assetPicker);
 
     return {
         label: c.name,

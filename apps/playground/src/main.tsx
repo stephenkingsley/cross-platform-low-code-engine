@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import '@puckeditor/core/puck.css';
 import './puck-theme.css';
 import { App } from './App';
-import { configureRem } from '@lce/layout';
+import { configureRem } from 'pandora-box-layout';
 
 configureRem({ convert: (px) => `${px}px` });
 

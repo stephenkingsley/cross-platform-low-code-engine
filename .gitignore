@@ -150,3 +150,5 @@ vite.config.ts.timestamp-*
 
 # packaged deploy bundles (vite build output tarballs)
 dp-builder-dist-*.tar.gz
+dp-builder-dist-*/
+*-dist.zip

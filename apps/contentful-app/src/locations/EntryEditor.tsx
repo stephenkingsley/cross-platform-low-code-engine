@@ -2,15 +2,31 @@ import { EditorAppSDK } from '@contentful/app-sdk';
 import { Note } from '@contentful/f36-components';
 import { useSDK } from '@contentful/react-apps-toolkit';
 import { FieldLabel, usePuck, type Data, type Fields } from '@puckeditor/core';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { DpPage } from '@lce/components-dp';
 import { Editor } from '@lce/editor';
 import { pickContentfulAsset } from '../lib/contentful-assets';
 import { useDocumentField, type DocData } from '../lib/useDocumentField';
 import { registry, renderableManifest } from '../registry';
 import { categories, puckOverrides } from '../editor-chrome';
+import { ModulesMenu } from '../ModulesMenu';
 
 const LOCALES = ['en', 'zh'];
+
+/**
+ * Feature-flag catalog for the per-block Visibility control. In production, source this from
+ * your entitlement config (or a Contentful entry) so it matches what the server returns; each
+ * block's `visibleWhen` references these keys and the runtime hides blocks the user isn't
+ * entitled to (the app passes the fetched flags to the runtime).
+ */
+const FLAG_CATALOG = [
+    { key: 'Lounge' },
+    { key: 'FastTrack' },
+    { key: 'Limo' },
+    { key: 'localOffer' },
+    { key: 'Dining' },
+    { key: 'eSIM' },
+];
 
 /** name → url-safe slug (lowercase, non-alphanumerics → single hyphen, trimmed). */
 function slugify(s: string): string {
@@ -149,7 +165,15 @@ const Entry = () => {
                     onChange={onChange}
                     canvasWrapper={DpPage}
                     iframe={false}
-                    overrides={puckOverrides}
+                    overrides={{
+                        ...puckOverrides,
+                        drawer: ({ children }: { children: ReactNode }) => (
+                            <>
+                                <ModulesMenu />
+                                {children}
+                            </>
+                        ),
+                    }}
                     categories={categories}
                     rootFields={ROOT_FIELDS}
                     rootLabel="Page settings"
@@ -157,6 +181,7 @@ const Entry = () => {
                     fallbackLocale="en"
                     locales={LOCALES}
                     assetPicker={onPickImage}
+                    flagCatalog={FLAG_CATALOG}
                 />
             </main>
         </div>

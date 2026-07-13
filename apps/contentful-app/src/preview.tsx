@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { DpPage } from '@lce/components-dp';
-import { Render } from '@lce/runtime-react';
+import { Render, type Manifest } from '@lce/runtime-react';
 import type { DocData } from '@lce/manifest';
 import { fetchPageEntry } from './lib/fetch-document';
 import { registry, renderableManifest } from './registry';
@@ -20,7 +20,7 @@ const msgStyle: CSSProperties = {
  * Puck-free runtime + dp registry the builder targets. This is what a Contentful "custom
  * content preview" URL points at: `…/?entryId={entry.sys.id}&locale={locale}`.
  */
-export function PreviewPage({ entryId, locale }: { entryId: string; locale: string }) {
+export function PreviewPage({ entryId, locale, environment }: { entryId: string; locale: string; environment?: string }) {
     const [doc, setDoc] = useState<DocData | null>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -28,7 +28,7 @@ export function PreviewPage({ entryId, locale }: { entryId: string; locale: stri
         let alive = true;
         setDoc(null);
         setError(null);
-        fetchPageEntry(entryId)
+        fetchPageEntry(entryId, { environment })
             .then((fields) => {
                 if (!alive) return;
                 if (!fields?.document) setError(`Entry ${entryId} has no "document" field`);
@@ -38,7 +38,7 @@ export function PreviewPage({ entryId, locale }: { entryId: string; locale: stri
         return () => {
             alive = false;
         };
-    }, [entryId]);
+    }, [entryId, environment]);
 
     if (error) return <div style={{ ...msgStyle, color: '#b42318' }}>Preview error: {error}</div>;
     if (!doc) return <div style={msgStyle}>Loading preview…</div>;
@@ -50,7 +50,7 @@ export function PreviewPage({ entryId, locale }: { entryId: string; locale: stri
                 <Render
                     data={doc}
                     registry={registry}
-                    manifest={renderableManifest}
+                    manifest={renderableManifest as unknown as Manifest}
                     locale={locale}
                     fallbackLocale="en"
                     onAction={(action) => {

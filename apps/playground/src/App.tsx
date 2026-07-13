@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Data } from '@puckeditor/core';
 import { Editor } from '@lce/editor';
 import { PageRuntime } from './page-runtime';
@@ -6,110 +6,58 @@ import { DpConfig, DpPage } from '@lce/components-dp';
 import { documentJsonSchema, type DocData } from '@lce/manifest';
 import { registry, renderableManifest as manifest } from './registry';
 import { categories, puckOverrides } from './editor-chrome';
+import { ModulesMenu } from './ModulesMenu';
+import seedPrepareTrip from './seed-prepare-trip.json';
 const STORAGE_KEY = 'lce.doc.v14';
 
 /** Content locales the builder authors. Stable reference (used as a memo dep). */
 const LOCALES: string[] = ['en', 'zh'];
 
-const HERO_IMG = 'https://picsum.photos/seed/dptravel/600/440';
-const NEWS_IMG_1 = 'https://picsum.photos/seed/dpnews1/460/280';
-const NEWS_IMG_2 = 'https://picsum.photos/seed/dpnews2/460/280';
-const NEWS_IMG_3 = 'https://picsum.photos/seed/dpnews3/460/280';
+/**
+ * Feature-flag catalog — the entitlement keys ops can gate a block on (the builder's Visibility
+ * dropdown) AND the switches the Preview simulates. In production this list comes from your
+ * entitlement service / config; the server returns the SAME keys, and each block's `visibleWhen`
+ * references them by name. This one list is the entire contract between build-time and runtime.
+ */
+const FLAG_CATALOG = [
+    { key: 'Lounge' },
+    { key: 'FastTrack' },
+    { key: 'Limo' },
+    { key: 'localOffer' },
+    { key: 'Dining' },
+    { key: 'eSIM' },
+];
 
-/** A rounded icon button overlaid in a top corner of the hero image (back / order list). */
-function heroButton(id: string, icon: string, align: 'start' | 'end') {
-    return {
-        type: 'Overlay',
-        props: {
-            id: `${id}-ov`,
-            placement: 'top',
-            align,
-            scrim: false,
-            padding: 'sm',
-            children: [
-                { type: 'Button', props: { id, children: icon, shape: 'rounded', size: 'mini', type: 'tertiary' } },
-            ],
-        },
-    };
+/** Preview-only switches that simulate the server's entitlement map, so you can watch blocks show/hide. */
+function FlagBar({ catalog, flags, onToggle }: { catalog: { key: string; label?: string }[]; flags: Record<string, boolean>; onToggle: (k: string) => void }) {
+    return (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', padding: '10px 16px', background: '#fff', borderBottom: '1px solid #eef1f4', position: 'sticky', top: 0, zIndex: 5 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b' }}>Entitlements</span>
+            {catalog.map((f) => {
+                const on = !!flags[f.key];
+                return (
+                    <button
+                        key={f.key}
+                        onClick={() => onToggle(f.key)}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 28, padding: '0 12px', borderRadius: 999, cursor: 'pointer', border: '1px solid', borderColor: on ? '#2680eb' : '#cbd5e1', background: on ? '#2680eb' : '#fff', color: on ? '#fff' : '#64748b', fontSize: 12.5, fontWeight: 600 }}
+                    >
+                        <span style={{ width: 8, height: 8, borderRadius: 999, background: on ? '#fff' : '#cbd5e1' }} />
+                        {f.label ?? f.key}
+                    </button>
+                );
+            })}
+        </div>
+    );
 }
 
 /**
- * Default page — Module 1 «顶部概览区» (top overview): a hero image with the back /
- * order buttons overlaid, then title / subtitle / description rendered with the
- * `Typography` primitive on dp-design's type scale (title 18·700·#0A2333,
- * subtitle 14·500·#4B4A4A, body 14·400·#737272) — dp's own `Text` is skeleton-only,
- * so it can't style copy.
+ * Default page — a worked example built ENTIRELY from layout primitives (no bespoke
+ * template): a "Prepare for your trip" card stack. Hero card = full-bleed `Image`
+ * (clipped to the rounded corners via `Card.clipContent`) + a `Positioned` badge over it;
+ * each action card = text + a `Positioned` image panel that bleeds to the edge and is
+ * clipped. Authored in the builder, exported, and checked in as `seed-prepare-trip.json`.
  */
-const SEED: Data = {
-    root: { props: {} },
-    content: [
-        // hero image — back (←) top-left + order (☰) top-right overlaid on the image
-        {
-            type: 'Swiper',
-            props: {
-                id: 'hero',
-                direction: 'horizontal',
-                slideSize: 100,
-                height: 220,
-                imageFit: 'cover',
-                allowTouchMove: false,
-                loop: false,
-                imagesList: [
-                    {
-                        src: HERO_IMG,
-                        content: [
-                            heroButton('hero-back', '←', 'start'),
-                            heroButton('hero-order', '☰', 'end'),
-                        ],
-                    },
-                ],
-            },
-        },
-        // title / subtitle / description — styled via Typography (dp type scale)
-        {
-            type: 'Flex',
-            props: {
-                id: 'hero-text',
-                direction: 'column',
-                align: 'start',
-                gap: 'sm',
-                padding: 'md',
-                children: [
-                    { type: 'Typography', props: { id: 'hero-title', variant: 'title', text: { en: 'Enjoy your Travel in China', zh: '畅游中国之旅' } } },
-                    { type: 'Typography', props: { id: 'hero-sub', variant: 'subtitle', text: { en: 'valid for 1 year | Refundable', zh: '一年有效 · 可退款' } } },
-                    { type: 'Typography', props: { id: 'hero-desc', variant: 'body', text: { en: 'Your all-in-one pass to Beijing. Pick from xx+ attractions & experience. Bundle together and save up to 50%.', zh: '畅游北京的一站式通行证。精选 xx+ 景点与体验，打包立省 50%。' } } },
-                ],
-            },
-        },
-        // ===== «What's new» — image cards with overlaid caption (badge + title + desc) =====
-        {
-            type: 'Flex',
-            props: {
-                id: 'wn-head',
-                direction: 'column',
-                align: 'start',
-                padding: 'md',
-                children: [{ type: 'Typography', props: { id: 'wn-title', variant: 'title', text: { en: "What's new", zh: '最新动态' } } }],
-            },
-        },
-        {
-            // self-contained card carousel — Swiper.Item-style cards with a gap between them
-            type: 'MediaCarousel',
-            props: {
-                id: 'wn-carousel',
-                cardWidth: 86, // each card 86% wide → the next one peeks
-                gap: 16, // spacing between cards
-                height: 184,
-                items: [
-                    { src: NEWS_IMG_1, badge: { en: 'News', zh: '新闻' }, title: { en: 'Our network is growing', zh: '我们的网络在壮大' }, description: { en: 'More airports, more ways to simplify your travel.', zh: '更多机场，更多简化出行的方式。' } },
-                    { src: NEWS_IMG_2, badge: { en: 'Product', zh: '产品' }, title: { en: 'Faster lounge check-in', zh: '更快的休息室入场' }, description: { en: 'Scan once at the door and walk straight in.', zh: '门口扫一次码，直接进入。' } },
-                    { src: NEWS_IMG_3, badge: { en: 'Guide', zh: '指南' }, title: { en: 'Summer travel tips', zh: '夏日出行贴士' }, description: { en: 'Make the most of your time at the airport.', zh: '充分利用你在机场的时间。' } },
-                ],
-            },
-        },
-    ],
-    zones: {},
-};
+const SEED = seedPrepareTrip as unknown as Data;
 
 function load(): Data {
     try {
@@ -227,6 +175,9 @@ export function App() {
     const [save, setSave] = useState<Save>('saved');
     const [lang, setLang] = useState<Lang>('en');
     const [dark, setDark] = useState(false);
+    // Preview entitlement switches (default: all on). The runtime evaluates each block's
+    // `visibleWhen` against this map — toggling a chip shows/hides the gated blocks live.
+    const [flags, setFlags] = useState<Record<string, boolean>>(() => Object.fromEntries(FLAG_CATALOG.map((f) => [f.key, true])));
     const dataRef = useRef<Data>(data);
     const timer = useRef<number | undefined>(undefined);
 
@@ -319,11 +270,22 @@ export function App() {
                             data={data}
                             canvasWrapper={DpPage}
                             iframe={false}
-                            overrides={puckOverrides}
+                            overrides={{
+                                ...puckOverrides,
+                                // Reusable modules live in the left blocks drawer (with the templates),
+                                // above the component categories — not in a header menu.
+                                drawer: ({ children }: { children: ReactNode }) => (
+                                    <>
+                                        <ModulesMenu />
+                                        {children}
+                                    </>
+                                ),
+                            }}
                             categories={categories}
                             locale={lang}
                             fallbackLocale="en"
                             locales={LOCALES}
+                            flagCatalog={FLAG_CATALOG}
                             onChange={scheduleSave}
                             onPublish={(d) => {
                                 dataRef.current = d;
@@ -335,10 +297,24 @@ export function App() {
                         />
                     ) : (
                         <div style={{ height: '100%', overflow: 'auto', background: 'var(--lce-stage-bg, #eef1f4)' }}>
-                            {/* The published page rendered by the standalone runtime component —
-                                give it the document JSON + locale, it renders. No Puck, no editor. */}
+                            {/* Simulate the server's entitlements; the runtime hides gated blocks accordingly. */}
+                            <FlagBar catalog={FLAG_CATALOG} flags={flags} onToggle={(k) => setFlags((f) => ({ ...f, [k]: !f[k] }))} />
+                            {/* The published page rendered by the standalone runtime component — give it the
+                                document JSON + locale + entitlement flags, it renders. No Puck, no editor. */}
                             <DpPage>
-                                <PageRuntime doc={data as unknown as DocData} locale={lang} fallbackLocale="en" />
+                                <PageRuntime
+                                    doc={data as unknown as DocData}
+                                    locale={lang}
+                                    fallbackLocale="en"
+                                    flags={flags}
+                                    onAction={(action) => {
+                                        // Demo dispatcher — a real host navigates / emits app events here.
+                                        // eslint-disable-next-line no-console
+                                        console.log('[action]', action);
+                                        if (action.type === 'navigate') window.alert(`Navigate → ${action.href}`);
+                                        else window.alert(`Event → ${action.name}`);
+                                    }}
+                                />
                             </DpPage>
                         </div>
                     )}

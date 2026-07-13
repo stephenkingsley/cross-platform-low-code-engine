@@ -3,6 +3,11 @@
  * ops / marketing users: component cards with coloured monogram chips, and the
  * component list grouped into meaningful categories (covers the whole library).
  */
+import { useRef } from 'react';
+import { usePuck } from '@puckeditor/core';
+import { CustomOutline } from './outline';
+
+const ROOT_ZONE = 'root:default-zone';
 
 const LABELS: Record<string, string> = {
     LabelInput: 'Label Input',
@@ -34,30 +39,79 @@ function hueOf(name: string): number {
     return h;
 }
 
-/** Puck overrides: render each drawer item as a polished card. */
-export const puckOverrides = {
-    drawerItem: ({ name }: { name: string }) => {
-        const h = hueOf(name);
-        return (
-            <div className="lce-block">
-                <span
-                    className="lce-block__chip"
-                    style={{ background: `hsl(${h} 70% 93%)`, color: `hsl(${h} 55% 32%)` }}
-                >
-                    {name[0]}
+/** A small "add" glyph — signals click-to-add on the high-level block cards (vs the drag grip). */
+function AddIcon() {
+    return (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden style={{ color: 'var(--puck-color-grey-07, #94a3b8)', display: 'block' }}>
+            <path d="M12 5v14M5 12h14" />
+        </svg>
+    );
+}
+
+/**
+ * One drawer block, rendered as a polished card. Besides Puck's native drag-to-canvas, it also
+ * supports CLICK-to-add: a plain click appends the component to the end of the page (same as the
+ * Modules cards). A drag is unaffected — dnd-kit only treats it as a drag once the pointer moves
+ * past its activation distance, and it suppresses the trailing click, so drag never double-inserts.
+ * High-level blocks (Templates) show a ➕ to signal click-to-add; primitives keep the drag grip.
+ */
+function DrawerBlockCard({ name }: { name: string }) {
+    // Templates are the high-level "click to add" blocks (referenced lazily — `categories` is
+    // declared lower in this file, and this runs at render time, after the module has initialised).
+    const clickAdd = categories.templates.components.includes(name);
+    const { appState, dispatch } = usePuck() as unknown as {
+        appState: { data: { content?: unknown[] } };
+        dispatch: (a: Record<string, unknown>) => void;
+    };
+    const h = hueOf(name);
+    // Remember where the pointer went down; if it barely moved by click time it was a click, not a
+    // drag — so a drag-to-canvas never also fires a click-insert (belt-and-braces over dnd-kit's
+    // own click suppression).
+    const down = useRef<{ x: number; y: number } | null>(null);
+    const addToPage = () => {
+        const index = (appState.data.content ?? []).length; // append to the end of the page
+        dispatch({ type: 'insert', componentType: name, destinationIndex: index, destinationZone: ROOT_ZONE });
+    };
+    return (
+        <div
+            className="lce-block"
+            data-block={name}
+            title={clickAdd ? 'Click to add' : 'Click to add · drag to place'}
+            style={{ cursor: 'pointer' }}
+            onPointerDown={(e) => (down.current = { x: e.clientX, y: e.clientY })}
+            onClick={(e) => {
+                const d = down.current;
+                if (d && Math.hypot(e.clientX - d.x, e.clientY - d.y) > 5) return; // moved → it was a drag
+                addToPage();
+            }}
+        >
+            <span className="lce-block__chip" style={{ background: `hsl(${h} 70% 93%)`, color: `hsl(${h} 55% 32%)` }}>
+                {name[0]}
+            </span>
+            <span className="lce-block__name">{labelOf(name)}</span>
+            {clickAdd ? (
+                <span className="lce-block__grip" aria-hidden style={{ display: 'inline-flex', alignItems: 'center' }}>
+                    <AddIcon />
                 </span>
-                <span className="lce-block__name">{labelOf(name)}</span>
+            ) : (
                 <span className="lce-block__grip" aria-hidden>
                     ⠿
                 </span>
-            </div>
-        );
-    },
+            )}
+        </div>
+    );
+}
+
+/** Puck overrides: render each drawer item as a polished card (click-to-add + drag-to-place). */
+export const puckOverrides = {
+    drawerItem: ({ name }: { name: string }) => <DrawerBlockCard name={name} />,
+    // Interactive outline: smooth @dnd-kit drag-reorder + select + duplicate / delete (with confirm).
+    outline: () => <CustomOutline />,
 };
 
 /** Group the whole component drawer into friendly categories (covers all components). */
 export const categories = {
-    templates: { title: 'Templates', components: ['HeroOverview', 'WhatsNew', 'UpcomingList', 'ServiceList'] },
+    templates: { title: 'Templates', components: ['HeroOverview', 'FeatureCard', 'ActionCard', 'WhatsNew', 'UpcomingList', 'ServiceList'] },
     // Free-layout trio: Overlay (the panel over a slide/image), Positioned (absolute x/y inside it), Flex.
     layout: { title: 'Layout', components: ['Overlay', 'Positioned', 'Flex'] },
     container: { title: 'Container', components: ['Card', 'Typography', 'Divider', 'Collapse', 'Sheet', 'SafeArea'] },

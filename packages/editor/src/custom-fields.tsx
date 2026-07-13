@@ -49,6 +49,77 @@ interface FieldProps {
     label?: string;
 }
 
+/** One entry in the feature-flag catalog the Visibility control picks from. */
+export interface VisibilityFlag {
+    /** The flag key the server returns and the document references. */
+    key: string;
+    /** Human label for the dropdown (defaults to `key`). */
+    label?: string;
+}
+
+interface VisibilityFieldProps {
+    value?: unknown; // the reserved `visibleWhen` condition
+    onChange: (v: unknown) => void;
+    flags: VisibilityFlag[];
+}
+
+/** Reduce a stored `visibleWhen` condition to the simple editor model. */
+function parseVisibility(v: unknown): { mode: 'always' | 'on' | 'off' | 'advanced'; flag?: string } {
+    if (v == null) return { mode: 'always' };
+    if (typeof v === 'string') return { mode: 'on', flag: v };
+    if (typeof v === 'object' && v !== null && 'not' in v && typeof (v as { not: unknown }).not === 'string') {
+        return { mode: 'off', flag: (v as { not: string }).not };
+    }
+    return { mode: 'advanced' };
+}
+
+/**
+ * Universal per-block visibility control. Writes the reserved `visibleWhen` prop as a declarative
+ * condition referencing a feature-flag KEY (from the host-supplied catalog) — the runtime hides
+ * the block when the host's flags say the user isn't entitled. Common cases (show/hide on one
+ * flag) are point-and-click; compound `all/any/equals` conditions are edited in the JSON view.
+ */
+export function VisibilityField({ value, onChange, flags }: VisibilityFieldProps) {
+    const { mode, flag } = parseVisibility(value);
+    const firstFlag = flags[0]?.key ?? '';
+    const current = flag ?? firstFlag;
+    const setMode = (m: string) => {
+        if (m === 'always') onChange(undefined);
+        else if (m === 'on') onChange(current);
+        else if (m === 'off') onChange({ not: current });
+    };
+    const setFlag = (k: string) => onChange(mode === 'off' ? { not: k } : k);
+    return (
+        <div>
+            <div style={labelStyle}>Visibility</div>
+            <select style={{ ...inputStyle, cursor: 'pointer' }} value={mode} onChange={(e) => setMode(e.target.value)}>
+                <option value="always">Always show</option>
+                <option value="on">Show when flag ON</option>
+                <option value="off">Show when flag OFF</option>
+                {mode === 'advanced' && <option value="advanced">Advanced (edit in JSON)</option>}
+            </select>
+            {(mode === 'on' || mode === 'off') && (
+                <div style={{ marginTop: 8 }}>
+                    <div style={subLabel}>Feature flag</div>
+                    {/* Fixed list — the option's value IS the flag the server returns (label === value,
+                        no hidden key), so what ops picks is exactly what the document stores. */}
+                    <select style={{ ...inputStyle, cursor: 'pointer' }} value={current} onChange={(e) => setFlag(e.target.value)}>
+                        {flags.length === 0 && <option value="">(no flags configured)</option>}
+                        {flags.map((f) => (
+                            <option key={f.key} value={f.key}>
+                                {f.label ?? f.key}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
+            {mode === 'advanced' && (
+                <div style={{ ...subLabel, marginTop: 8, fontWeight: 400 }}>Advanced condition (all / any / equals…) — edit in the {'{ } JSON'} view.</div>
+            )}
+        </div>
+    );
+}
+
 const LOCALE_LABEL: Record<string, string> = { en: 'EN', zh: '中文', ja: '日本語', ko: '한국어' };
 
 interface LocalizedFieldProps {
