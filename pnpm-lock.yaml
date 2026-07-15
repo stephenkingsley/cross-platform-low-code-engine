@@ -85,8 +85,8 @@ importers:
         specifier: ^0.1.18
         version: 0.1.18(@dragonpass/atom-ui-mobile@file:../dp-design/packages/atom-ui-mobile(axios@1.17.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(react@18.3.1)
       pandora-box-manifest:
-        specifier: ^0.2.9
-        version: 0.2.9
+        specifier: ^0.2.10
+        version: 0.2.10
       pandora-box-react:
         specifier: ^0.4.0
         version: 0.4.0(react@18.3.1)
@@ -161,8 +161,8 @@ importers:
         specifier: ^0.1.19
         version: 0.1.19(@dragonpass/atom-ui-mobile@file:../dp-design/packages/atom-ui-mobile(axios@1.17.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(react@18.3.1)
       pandora-box-manifest:
-        specifier: ^0.2.9
-        version: 0.2.9
+        specifier: ^0.2.10
+        version: 0.2.10
       pandora-box-react:
         specifier: ^0.4.0
         version: 0.4.0(react@18.3.1)
@@ -2606,8 +2606,8 @@ packages:
       react-native-svg:
         optional: true
 
-  pandora-box-manifest@0.2.9:
-    resolution: {integrity: sha512-r5bewSNqtaU1i80H5vWD62UOhRgmWhMjtOB3DOraYruQWN4tmEd9uhxzex+7vOEdA7LrM5K5WLWU6XEJlU8f2g==}
+  pandora-box-manifest@0.2.10:
+    resolution: {integrity: sha512-86W7oiGrS6BiL0y6tGHR0fA8pM/pyp7qRTpMIc+exZu8IR/q+nkAJd+1TDcB0HpnjE0RyixRbkz/+b0zMI3BZA==}
 
   pandora-box-react@0.4.0:
     resolution: {integrity: sha512-by4jQyu2rGT6434PciTopyUWT8K9r2wBM8dETdQ8XQNZETRx/WSKiuFT2LfPCgvU9RjZs1Fr1DIpN/EzJfwFdw==}
@@ -5687,7 +5687,7 @@ snapshots:
     optionalDependencies:
       '@dragonpass/atom-ui-mobile': file:../dp-design/packages/atom-ui-mobile(axios@1.17.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
 
-  pandora-box-manifest@0.2.9: {}
+  pandora-box-manifest@0.2.10: {}
 
   pandora-box-react@0.4.0(react@18.3.1):
     dependencies:
