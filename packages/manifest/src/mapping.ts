@@ -65,7 +65,8 @@ export function getByPath(obj: unknown, path: string): unknown {
 // A `{{ … }}` slot can hold a path plus piped filters; capture the whole inner expression.
 const TEMPLATE_RE = /\{\{\s*([^}]+?)\s*\}\}/g;
 const HAS_TEMPLATE = /\{\{[^}]+\}\}/;
-const hasTemplate = (s: string) => HAS_TEMPLATE.test(s);
+/** True when a string carries at least one `{{ … }}` slot. */
+export const hasTemplate = (s: string) => HAS_TEMPLATE.test(s);
 
 /** One-line cheatsheet of the built-in filters (the editor shows this under template inputs). */
 export const TEMPLATE_FILTER_HINT = 'map:A=x,B=y · default:x · date · datetime · time · encode · upper · lower';
@@ -123,7 +124,8 @@ function applyFilter(value: unknown, f: TemplateFilter, raw: Record<string, unkn
 }
 
 /** Substitute `{{ path | filter:arg | … }}` slots, reading paths from `raw` and piping filters. */
-function applyTemplate(tpl: string, raw: unknown, transforms?: TransformFns): string {
+/** Substitute `{{ path | filter | … }}` slots, reading paths out of `raw`. */
+export function applyTemplate(tpl: string, raw: unknown, transforms?: TransformFns): string {
     const row = (raw ?? {}) as Record<string, unknown>;
     return tpl.replace(TEMPLATE_RE, (_m, expr: string) => {
         const { path, filters } = parseExpr(expr);
@@ -134,6 +136,19 @@ function applyTemplate(tpl: string, raw: unknown, transforms?: TransformFns): st
 }
 
 /** Recursively substitute templates in every string leaf of a value. */
+/**
+ * The paths a template reads, in order (`"{{ a | upper }} / {{ b.c }}"` → `['a', 'b.c']`).
+ *
+ * The editor needs these to tell ops that a path they typed matches nothing, which is the only
+ * way a typo is visible before publishing: an unresolved slot renders as empty string, and an
+ * empty string looks exactly like a value that happened to be blank.
+ */
+export function templatePaths(tpl: string): string[] {
+    const out: string[] = [];
+    for (const m of tpl.matchAll(TEMPLATE_RE)) out.push(parseExpr(m[1]).path);
+    return out;
+}
+
 function deepTemplate(value: unknown, raw: unknown, transforms?: TransformFns): unknown {
     if (typeof value === 'string') return hasTemplate(value) ? applyTemplate(value, raw, transforms) : value;
     if (Array.isArray(value)) return value.map((v) => deepTemplate(v, raw, transforms));
