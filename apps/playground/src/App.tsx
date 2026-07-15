@@ -10,8 +10,14 @@ import { ModulesMenu } from './ModulesMenu';
 import seedPrepareTrip from './seed-prepare-trip.json';
 const STORAGE_KEY = 'lce.doc.v14';
 
-/** Content locales the builder authors. Stable reference (used as a memo dep). */
-const LOCALES: string[] = ['en', 'zh'];
+/**
+ * Content locales the builder authors. One for now — multi-language is coming back as its own
+ * design, and until then the panel shouldn't ask ops a question we haven't decided the answer to.
+ *
+ * Text still SAVES as a `{ locale: string }` map and the panel only writes this locale, so any
+ * other language already in a document is carried through untouched rather than destroyed.
+ */
+const LOCALES: string[] = ['en'];
 
 /**
  * Feature-flag catalog — the entitlement keys ops can gate a block on (the builder's Visibility
@@ -31,6 +37,21 @@ const FLAG_CATALOG = [
     { key: 'Dining' },
     { key: 'eSIM' },
 ];
+
+/**
+ * Preview-only stand-in for the data a host fetches and passes as `bindings`. Ops writes
+ * `{{ guests }}` in any text field; the runtime fills it from here. The engine never cares what the
+ * value IS — the host decides that, which is why these are already display-ready strings.
+ */
+const DEMO_BINDINGS = {
+    guests: 2,
+    time: '14:00',
+    date: '8 June 2026',
+    lounge: 'Aspire',
+    // An ISO timestamp for the `| time` / `| date` filters, if you'd rather format in the page
+    // than in the host. Its offset is respected, so this reads 14:00 on every device.
+    at: '2026-06-08T14:00:00+01:00',
+};
 
 /** Preview-only switches that simulate the server's entitlement map, so you can watch blocks show/hide. */
 function FlagBar({ catalog, flags, onToggle }: { catalog: { key: string; label?: string }[]; flags: Record<string, boolean>; onToggle: (k: string) => void }) {
@@ -323,6 +344,7 @@ export function App() {
                             fallbackLocale="en"
                             locales={LOCALES}
                             flagCatalog={FLAG_CATALOG}
+                            sampleBindings={DEMO_BINDINGS}
                             mode={mode}
                             onChange={scheduleSave}
                             onPublish={(d) => {
@@ -345,6 +367,7 @@ export function App() {
                                     locale={lang}
                                     fallbackLocale="en"
                                     flags={flags}
+                                    bindings={DEMO_BINDINGS}
                                     onAction={(action) => {
                                         // Demo dispatcher — a real host navigates / emits app events here.
                                         // eslint-disable-next-line no-console
