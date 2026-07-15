@@ -11,7 +11,32 @@ import { registry, renderableManifest } from '../registry';
 import { categories, puckOverrides } from '../editor-chrome';
 import { ModulesMenu } from '../ModulesMenu';
 
-const LOCALES = ['en', 'zh'];
+/**
+ * Content locales the builder authors. One for now — multi-language is coming back as its own
+ * design, and until then the panel shouldn't ask ops a question we haven't decided the answer to.
+ *
+ * Text still SAVES as a `{ locale: string }` map and the panel writes only this locale, so the
+ * translations already in a published document are carried through untouched, not destroyed.
+ */
+const LOCALES = ['en'];
+
+/**
+ * A REAL sample of the data this project passes the runtime as `bindings`. Ops can put `{{ … }}`
+ * in any text; this is what makes that usable: the paths it contains become click-to-insert chips
+ * and every slot shows what it reads as, live — including calling out a name that matches nothing,
+ * which is the only way a typo is visible before publishing (an unresolved slot renders as empty,
+ * and empty looks exactly like a value that happened to be blank).
+ *
+ * Replace this with a real response from YOUR API. It is used only in the editor and is never
+ * written into the document, so it costs a published page nothing.
+ */
+const SAMPLE_BINDINGS = {
+    guests: 2,
+    time: '14:00',
+    date: '8 June 2026',
+    lounge: 'Aspire',
+    at: '2026-06-08T14:00:00+01:00',
+};
 
 /**
  * Feature-flag catalog for the per-block Visibility control. In production, source this from
@@ -192,6 +217,7 @@ const Entry = () => {
                     locales={LOCALES}
                     assetPicker={onPickImage}
                     flagCatalog={FLAG_CATALOG}
+                    sampleBindings={SAMPLE_BINDINGS}
                     mode="ops"
                 />
             </main>
