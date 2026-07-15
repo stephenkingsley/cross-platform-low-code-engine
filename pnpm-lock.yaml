@@ -88,8 +88,8 @@ importers:
         specifier: ^0.2.10
         version: 0.2.10
       pandora-box-react:
-        specifier: ^0.4.0
-        version: 0.4.0(react@18.3.1)
+        specifier: ^0.4.1
+        version: 0.4.1(react@18.3.1)
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -164,8 +164,8 @@ importers:
         specifier: ^0.2.10
         version: 0.2.10
       pandora-box-react:
-        specifier: ^0.4.0
-        version: 0.4.0(react@18.3.1)
+        specifier: ^0.4.1
+        version: 0.4.1(react@18.3.1)
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -280,7 +280,7 @@ importers:
     dependencies:
       pandora-box-react:
         specifier: ^0.4.0
-        version: 0.4.0(react@18.3.1)
+        version: 0.4.1(react@18.3.1)
     devDependencies:
       '@types/react':
         specifier: ^18.3.12
@@ -2609,8 +2609,8 @@ packages:
   pandora-box-manifest@0.2.10:
     resolution: {integrity: sha512-86W7oiGrS6BiL0y6tGHR0fA8pM/pyp7qRTpMIc+exZu8IR/q+nkAJd+1TDcB0HpnjE0RyixRbkz/+b0zMI3BZA==}
 
-  pandora-box-react@0.4.0:
-    resolution: {integrity: sha512-by4jQyu2rGT6434PciTopyUWT8K9r2wBM8dETdQ8XQNZETRx/WSKiuFT2LfPCgvU9RjZs1Fr1DIpN/EzJfwFdw==}
+  pandora-box-react@0.4.1:
+    resolution: {integrity: sha512-xYjoa/a9+bLD8MlVu69AIcIyBSxApLkkC95gXAbjC1DMgvV2MfoNb9VSpaZb4J1fD7GDeWiUB5I38VwDSFUrXA==}
     peerDependencies:
       react: '>=18'
 
@@ -5689,7 +5689,7 @@ snapshots:
 
   pandora-box-manifest@0.2.10: {}
 
-  pandora-box-react@0.4.0(react@18.3.1):
+  pandora-box-react@0.4.1(react@18.3.1):
     dependencies:
       react: 18.3.1
 

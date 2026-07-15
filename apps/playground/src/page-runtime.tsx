@@ -9,7 +9,7 @@
  *     <PageRuntime doc={pageJson} locale="zh" />
  */
 import type { ReactNode } from 'react';
-import { createRuntime, type Manifest } from 'pandora-box-react';
+import { createRuntime, type BoundRuntimeProps, type Manifest } from 'pandora-box-react';
 import { DpConfig, DpProvider } from '@lce/components-dp';
 import { registry, renderableManifest } from './registry';
 
@@ -22,7 +22,7 @@ function DpWrapper({ locale, children }: { locale?: string; children: ReactNode 
     );
 }
 
-export const PageRuntime = createRuntime({
+export const PageRuntime: (props: BoundRuntimeProps) => ReactNode = createRuntime({
     registry,
     manifest: renderableManifest as unknown as Manifest,
     wrapper: DpWrapper,

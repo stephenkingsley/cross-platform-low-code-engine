@@ -45,6 +45,8 @@ export interface EditorProps {
     flagNoun?: BuildOptions['flagNoun'];
     /** App events a block's `action` may fire. Absent → the event name falls back to free text. */
     eventCatalog?: BuildOptions['eventCatalog'];
+    /** A real sample of the `bindings` the host will pass, so ops sees what a `{{ … }}` reads as. */
+    sampleBindings?: BuildOptions['sampleBindings'];
 }
 
 /** Thin wrapper that turns a manifest + registry into a ready-to-use Puck editor. */
@@ -69,6 +71,7 @@ export function Editor({
     allowStyleOverride,
     flagNoun,
     eventCatalog,
+    sampleBindings,
 }: EditorProps) {
     const config = useMemo(
         () =>
@@ -86,8 +89,9 @@ export function Editor({
                 allowStyleOverride,
                 flagNoun,
                 eventCatalog,
+                sampleBindings,
             }),
-        [manifest, registry, canvasWrapper, categories, locale, fallbackLocale, locales, assetPicker, rootFields, rootLabel, flagCatalog, mode, allowStyleOverride, flagNoun, eventCatalog],
+        [manifest, registry, canvasWrapper, categories, locale, fallbackLocale, locales, assetPicker, rootFields, rootLabel, flagCatalog, mode, allowStyleOverride, flagNoun, eventCatalog, sampleBindings],
     );
     return (
         <Puck

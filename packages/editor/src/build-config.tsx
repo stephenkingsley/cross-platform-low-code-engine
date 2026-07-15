@@ -120,6 +120,16 @@ export interface BuildOptions {
      * falls back to a free-text input (ops can then only guess a name the dispatcher may not know).
      */
     eventCatalog?: ActionEvent[];
+    /**
+     * A REAL sample of what the host will pass the runtime as `bindings` — used only to show ops
+     * what a `{{ … }}` reads as while they write it, and to offer the paths that sample contained.
+     * Never saved into the document.
+     *
+     * A sample rather than a declared list of paths, because the host's data is dynamic: any list
+     * would be a promise it can't keep, while a response is simply what came back. Empty/undefined
+     * → text still accepts `{{ … }}`, ops just writes it blind.
+     */
+    sampleBindings?: Record<string, unknown>;
 }
 
 /** Everything a field control needs beyond its own {@link ManifestField}. */
@@ -131,6 +141,7 @@ interface FieldCtx {
     blockLabel: string;
     flagNoun?: string;
     eventCatalog?: ActionEvent[];
+    sampleBindings?: Record<string, unknown>;
 }
 
 /**
@@ -165,25 +176,24 @@ function optionsFor(f: ManifestField, options: FieldOption[], ctx: FieldCtx): Fi
 /** Map one manifest field to its Puck field config. */
 function toPuckField(field: ManifestField, ctx: FieldCtx): Field {
     const d = field.field;
-    const i18n = !!ctx.locales && ctx.locales.length > 1;
     switch (d.kind) {
         case 'text':
         case 'textarea':
-            if (i18n) {
-                return {
-                    type: 'custom',
-                    label: field.label,
-                    render: ({ onChange, value }: { onChange: (v: unknown) => void; value?: unknown }) =>
-                        createElement(LocalizedTextField, {
-                            value: value as string | Record<string, string> | undefined,
-                            onChange: onChange as (v: Record<string, string>) => void,
-                            label: field.label,
-                            locales: ctx.locales!,
-                            multiline: d.kind === 'textarea',
-                        }),
-                } as Field;
-            }
-            return { type: d.kind, label: field.label } as Field;
+            // Always the custom control, even for a single locale: it carries the `{{ … }}` insert
+            // chips and the live preview, which a native text input has nowhere to put.
+            return {
+                type: 'custom',
+                label: field.label,
+                render: ({ onChange, value }: { onChange: (v: unknown) => void; value?: unknown }) =>
+                    createElement(LocalizedTextField, {
+                        value: value as string | Record<string, string> | undefined,
+                        onChange: onChange as (v: Record<string, string>) => void,
+                        label: field.label,
+                        locales: ctx.locales?.length ? ctx.locales : ['en'],
+                        multiline: d.kind === 'textarea',
+                        sample: ctx.sampleBindings,
+                    }),
+            } as Field;
         case 'url':
             // A link / route — a plain single-line string, never per-locale.
             return { type: 'text', label: field.label } as Field;
@@ -422,6 +432,7 @@ function buildComponentConfig(c: ComponentManifest, registry: ComponentRegistry,
         blockLabel: c.name,
         flagNoun: opts.flagNoun,
         eventCatalog: opts.eventCatalog,
+        sampleBindings: opts.sampleBindings,
     };
 
     // In ops mode the design tier has no CONTROL: its props are omitted from Puck's field map, not
