@@ -152,3 +152,5 @@ vite.config.ts.timestamp-*
 dp-builder-dist-*.tar.gz
 dp-builder-dist-*/
 *-dist.zip
+.cf-verify.env
+apps/playground/public/cf-doc.json
