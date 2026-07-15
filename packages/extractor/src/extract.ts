@@ -3,12 +3,14 @@ import path from 'node:path';
 import { Node, Project, type Symbol as TsSymbol, type Type } from 'ts-morph';
 import type {
     ComponentManifest,
+    FieldAudience,
     FieldDescriptor,
     FieldOption,
     Manifest,
     ManifestField,
 } from '@lce/manifest';
 import { REPO_ROOT, type ExtractProject, type ExtractTarget } from './config';
+import { applyOpsMeta, audienceOf } from './ops-meta';
 
 /** React-internal / escape-hatch props that must never become editable fields. */
 const GLOBAL_SKIP = new Set(['key', 'ref', 'id', 'length', 'tabIndex', 'role', 'className', 'style']);
@@ -57,8 +59,15 @@ function nonNullable(type: Type): Type[] {
 /**
  * Map a resolved scalar TS type to a field descriptor. Returns null for anything not
  * representable as a simple editor field (objects, arrays, mixed unions).
+ *
+ * `answers` carries JSDoc `@yes`/`@no`. A boolean has no designer vocabulary to preserve
+ * (unlike a `md`/`lg` token), so these relabel the OPTIONS in both tiers rather than
+ * living in {@link ManifestField.answers} as an ops-only gloss.
  */
-function classifyScalar(type: Type): FieldDescriptor | null {
+function classifyScalar(
+    type: Type,
+    answers?: { yes?: string; no?: string },
+): FieldDescriptor | null {
     const parts = nonNullable(type);
     if (parts.length === 0) return null;
 
@@ -68,8 +77,8 @@ function classifyScalar(type: Type): FieldDescriptor | null {
         return {
             kind: 'radio',
             options: [
-                { label: 'True', value: true },
-                { label: 'False', value: false },
+                { label: answers?.yes ?? 'On', value: true },
+                { label: answers?.no ?? 'Off', value: false },
             ],
         };
     }
@@ -104,19 +113,52 @@ function classifyScalar(type: Type): FieldDescriptor | null {
     return null;
 }
 
-function readJsDoc(decl: Node): { description?: string; defaultValue?: unknown } {
+/**
+ * Prop copy recovered from JSDoc. `description` is the engineer-facing body; the tags are
+ * the ops-facing overrides. Everything here loses to {@link OPS_META}.
+ */
+interface JsDocMeta {
+    description?: string;
+    defaultValue?: unknown;
+    label?: string;
+    help?: string;
+    audience?: FieldAudience;
+    /** `@yes` / `@no` — outcome labels for a boolean's two options. */
+    yes?: string;
+    no?: string;
+}
+
+function readJsDoc(decl: Node): JsDocMeta {
     if (!Node.isPropertySignature(decl)) return {};
     const docs = decl.getJsDocs();
     if (docs.length === 0) return {};
     const doc = docs[docs.length - 1];
-    const description = doc.getDescription().trim() || undefined;
-    let defaultValue: unknown;
+    const meta: JsDocMeta = { description: doc.getDescription().trim() || undefined };
     for (const tag of doc.getTags()) {
-        if (tag.getTagName() === 'default') {
-            defaultValue = parseLiteral(tag.getCommentText() ?? '');
+        const text = tag.getCommentText()?.trim() ?? '';
+        switch (tag.getTagName()) {
+            case 'default':
+                meta.defaultValue = parseLiteral(text);
+                break;
+            case 'label':
+                meta.label = text || undefined;
+                break;
+            case 'help':
+                meta.help = text || undefined;
+                break;
+            case 'audience':
+                // Unknown values are ignored so a typo falls back to kind-inference.
+                if (text === 'ops' || text === 'design') meta.audience = text;
+                break;
+            case 'yes':
+                meta.yes = text || undefined;
+                break;
+            case 'no':
+                meta.no = text || undefined;
+                break;
         }
     }
-    return { description, defaultValue };
+    return meta;
 }
 
 /**
@@ -157,15 +199,16 @@ function classifyItemProp(prop: TsSymbol, loc: Node): ManifestField | null {
     const type = sig ? sig.getType() : prop.getTypeAtLocation(loc);
     if (type.getCallSignatures().length > 0) return null;
     const required = sig ? !sig.hasQuestionToken() : false;
-    const { description, defaultValue } = sig ? readJsDoc(sig) : {};
+    const tags: JsDocMeta = sig ? readJsDoc(sig) : {};
+    const { description, defaultValue, help, audience } = tags;
     if (name === 'action') {
         // A per-row declarative click action (e.g. a carousel card's link).
-        return { name, label: 'On click', description, field: { kind: 'action' }, required };
+        return { name, label: tags.label ?? 'On click', description, help, audience, field: { kind: 'action' }, required };
     }
     if (REACT_NODE_RE.test(declaredText) || REACT_NODE_RE.test(type.getText())) {
-        return { name, label: humanize(name), description, field: { kind: 'slot' }, required };
+        return { name, label: tags.label ?? humanize(name), description, help, audience, field: { kind: 'slot' }, required };
     }
-    let field = classifyScalar(type);
+    let field = classifyScalar(type, tags);
     if (!field) return null;
     if (field.kind === 'text') {
         if (/colou?r$/i.test(name)) field = { kind: 'color' };
@@ -175,10 +218,19 @@ function classifyItemProp(prop: TsSymbol, loc: Node): ManifestField | null {
         else if (/(href|url|link)$/i.test(name) && !/(image|img|photo|avatar|logo|icon|cover|thumb|src|media)/i.test(name))
             field = { kind: 'url' };
     }
-    return { name, label: humanize(name), description, field, defaultValue, required };
+    return { name, label: tags.label ?? humanize(name), description, help, audience, field, defaultValue, required };
 }
 
+/**
+ * Classify a prop, then let {@link OPS_META} override the extracted copy. Wraps
+ * {@link classifyProp} so EVERY return path (slot, array, scalar, coerced text) gets patched.
+ */
 function classify(prop: TsSymbol, target: ExtractTarget, loc: Node): ManifestField | null {
+    const field = classifyProp(prop, target, loc);
+    return field ? applyOpsMeta(field, target.name) : null;
+}
+
+function classifyProp(prop: TsSymbol, target: ExtractTarget, loc: Node): ManifestField | null {
     const name = prop.getName();
     if (GLOBAL_SKIP.has(name)) return null;
     if (target.include && !target.include.includes(name)) return null;
@@ -204,33 +256,34 @@ function classify(prop: TsSymbol, target: ExtractTarget, loc: Node): ManifestFie
     if (type.getCallSignatures().length > 0) return null;
 
     const required = sig ? !sig.hasQuestionToken() : false;
-    const { description, defaultValue } = sig ? readJsDoc(sig) : {};
+    const tags: JsDocMeta = sig ? readJsDoc(sig) : {};
+    const { description, defaultValue, help, audience } = tags;
     const isReactNode =
         REACT_NODE_RE.test(declaredText) || REACT_NODE_RE.test(type.getText());
 
     // Coerce declared "text slots" (ReactNode props that are really text) to a text
     // field. A string is a valid ReactNode, so the component still accepts the value.
     if (target.textProps?.includes(name)) {
-        return { name, label: humanize(name), description, field: { kind: 'text' }, required, defaultValue };
+        return { name, label: tags.label ?? humanize(name), description, help, audience, field: { kind: 'text' }, required, defaultValue };
     }
     // Named ReactNode slots — drop other components inside (component-in-component).
     if (target.slotProps?.includes(name)) {
-        return { name, label: humanize(name), description, field: { kind: 'slot' }, required };
+        return { name, label: tags.label ?? humanize(name), description, help, audience, field: { kind: 'slot' }, required };
     }
 
     if (name === 'children') {
         // Text-bearing leaves (Button) want a text field; containers want a slot.
         if (target.childrenAs === 'text') {
-            return { name, label: 'Children', description, field: { kind: 'text' }, required, defaultValue };
+            return { name, label: tags.label ?? 'Children', description, help, audience, field: { kind: 'text' }, required, defaultValue };
         }
         if (target.childrenAs === 'slot' || isReactNode) {
-            return { name, label: 'Children', description, field: { kind: 'slot' }, required };
+            return { name, label: tags.label ?? 'Children', description, help, audience, field: { kind: 'slot' }, required };
         }
         // string children with no override → fall through to scalar classification
     } else if (isReactNode) {
         // Auto-discovery treats every ReactNode prop as a nesting slot.
         if (target.reactNodeAsSlot) {
-            return { name, label: humanize(name), description, field: { kind: 'slot' }, required };
+            return { name, label: tags.label ?? humanize(name), description, help, audience, field: { kind: 'slot' }, required };
         }
         return null;
     }
@@ -251,8 +304,10 @@ function classify(prop: TsSymbol, target: ExtractTarget, loc: Node): ManifestFie
             )?.name;
             return {
                 name,
-                label: humanize(name),
+                label: tags.label ?? humanize(name),
                 description,
+                help,
+                audience,
                 field: { kind: 'array', itemFields, itemLabel },
                 required,
             };
@@ -260,7 +315,7 @@ function classify(prop: TsSymbol, target: ExtractTarget, loc: Node): ManifestFie
     }
     if (type.isArray()) return null;
 
-    let field = classifyScalar(type);
+    let field = classifyScalar(type, tags);
     if (!field) return null;
 
     // Heuristic upgrades to richer controls based on the prop name.
@@ -273,7 +328,7 @@ function classify(prop: TsSymbol, target: ExtractTarget, loc: Node): ManifestFie
             field = { kind: 'url' };
     }
 
-    return { name, label: humanize(name), description, field, defaultValue, required };
+    return { name, label: tags.label ?? humanize(name), description, help, audience, field, defaultValue, required };
 }
 
 function extractComponent(
@@ -295,7 +350,10 @@ function extractComponent(
     if (target.action) {
         // Synthetic declarative "on click" — the component's real handler is a function
         // (stripped from the manifest); this is the data the runtime wires to onClick.
-        fields.push({ name: 'action', label: 'On click', field: { kind: 'action' }, required: false });
+        // Patched too: synthetic fields have no JSDoc to carry ops copy.
+        fields.push(
+            applyOpsMeta({ name: 'action', label: 'On click', field: { kind: 'action' }, required: false }, target.name),
+        );
     }
     if (target.dataBound) {
         // Synthetic data binding — source id + field map. The runtime maps the project's
@@ -304,12 +362,12 @@ function extractComponent(
         // fields to offer in the mapping UI.
         const itemsField = fields.find((f) => f.field.kind === 'array');
         const itemFields = itemsField?.field.kind === 'array' ? itemsField.field.itemFields : undefined;
-        fields.push({
-            name: 'binding',
-            label: 'Data binding',
-            field: { kind: 'dataMap', itemFields },
-            required: false,
-        });
+        fields.push(
+            applyOpsMeta(
+                { name: 'binding', label: 'Data binding', field: { kind: 'dataMap', itemFields }, required: false },
+                target.name,
+            ),
+        );
     }
 
     return {
@@ -396,5 +454,13 @@ export function writeManifest(components: ComponentManifest[], outRel: string): 
         console.log(`✓ ${c.name.padEnd(12)} → ${summary}`);
     }
     console.log(`\nManifest (${components.length} components) → ${outRel}`);
+
+    // Ops copy coverage — an ops field still labelled `humanize(name)` with no help is
+    // showing a non-engineer the ENGINEER's word for the prop. Reported, never enforced:
+    // the fallback chain always yields a usable label, so this is a backlog signal.
+    const ops = components.flatMap((c) => c.fields).filter((f) => audienceOf(f) === 'ops');
+    const bare = ops.filter((f) => f.label === humanize(f.name) && !f.help);
+    const pct = ops.length === 0 ? 100 : Math.round(((ops.length - bare.length) / ops.length) * 100);
+    console.log(`ops copy coverage: ${pct}% (${ops.length - bare.length}/${ops.length} ops fields have authored copy)`);
     return manifest;
 }
