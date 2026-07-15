@@ -6,8 +6,7 @@
 import { useRef } from 'react';
 import { usePuck } from '@puckeditor/core';
 import { CustomOutline } from './outline';
-
-const ROOT_ZONE = 'root:default-zone';
+import { ROOT_ZONE, revealInserted, showAddedToast } from './insert-feedback';
 
 const LABELS: Record<string, string> = {
     LabelInput: 'Label Input',
@@ -70,7 +69,12 @@ function DrawerBlockCard({ name }: { name: string }) {
     const down = useRef<{ x: number; y: number } | null>(null);
     const addToPage = () => {
         const index = (appState.data.content ?? []).length; // append to the end of the page
-        dispatch({ type: 'insert', componentType: name, destinationIndex: index, destinationZone: ROOT_ZONE });
+        // Supply the id rather than letting Puck mint one: it's the handle we need to scroll the
+        // new block into view, and there is no other way to learn it after the fact.
+        const id = `${name}-${Math.random().toString(36).slice(2, 8)}`;
+        dispatch({ type: 'insert', componentType: name, destinationIndex: index, destinationZone: ROOT_ZONE, id });
+        revealInserted(dispatch, index, id);
+        showAddedToast(labelOf(name));
     };
     return (
         <div

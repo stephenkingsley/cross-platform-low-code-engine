@@ -18,6 +18,9 @@ const LOCALES = ['en', 'zh'];
  * your entitlement config (or a Contentful entry) so it matches what the server returns; each
  * block's `visibleWhen` references these keys and the runtime hides blocks the user isn't
  * entitled to (the app passes the fetched flags to the runtime).
+ *
+ * `key` is the server's word; `label` is the ops word. Only the key is ever written to the
+ * document — a label is display-only, so rewording one never touches a saved page.
  */
 const FLAG_CATALOG = [
     { key: 'Lounge' },
@@ -105,6 +108,21 @@ function useStringField(sdk: EditorAppSDK, fieldId: string) {
  * the Contentful entry fields, so there's no separate metadata bar. The builder binds
  * `document`.
  */
+/**
+ * Puck UI overrides. Module-level and frozen at import: Puck keys the drawer subtree off these
+ * component identities, so rebuilding the object each render remounts the whole drawer (and wipes
+ * anything transient living in it).
+ */
+const EDITOR_OVERRIDES = {
+    ...puckOverrides,
+    drawer: ({ children }: { children: ReactNode }) => (
+        <>
+            <ModulesMenu />
+            {children}
+        </>
+    ),
+};
+
 const Entry = () => {
     const sdk = useSDK<EditorAppSDK>();
     const [doc, setDoc] = useDocumentField(sdk, 'document');
@@ -165,15 +183,7 @@ const Entry = () => {
                     onChange={onChange}
                     canvasWrapper={DpPage}
                     iframe={false}
-                    overrides={{
-                        ...puckOverrides,
-                        drawer: ({ children }: { children: ReactNode }) => (
-                            <>
-                                <ModulesMenu />
-                                {children}
-                            </>
-                        ),
-                    }}
+                    overrides={EDITOR_OVERRIDES}
                     categories={categories}
                     rootFields={ROOT_FIELDS}
                     rootLabel="Page settings"
@@ -182,6 +192,7 @@ const Entry = () => {
                     locales={LOCALES}
                     assetPicker={onPickImage}
                     flagCatalog={FLAG_CATALOG}
+                    mode="ops"
                 />
             </main>
         </div>

@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Data } from '@puckeditor/core';
-import { Editor } from '@lce/editor';
+import { Editor, type PanelMode } from '@lce/editor';
 import { PageRuntime } from './page-runtime';
 import { DpConfig, DpPage } from '@lce/components-dp';
 import { documentJsonSchema, type DocData } from '@lce/manifest';
@@ -18,6 +18,10 @@ const LOCALES: string[] = ['en', 'zh'];
  * dropdown) AND the switches the Preview simulates. In production this list comes from your
  * entitlement service / config; the server returns the SAME keys, and each block's `visibleWhen`
  * references them by name. This one list is the entire contract between build-time and runtime.
+ *
+ * Deliberately key-only: the dropdown shows the KEY, so what ops picks is visibly the exact value
+ * the document stores. A `label` gloss is supported but not used here — it would hide the stored
+ * value behind prose, and ops needs to be able to quote the key back to whoever owns the server.
  */
 const FLAG_CATALOG = [
     { key: 'Lounge' },
@@ -82,6 +86,13 @@ function downloadJson(filename: string, data: unknown) {
 
 type Save = 'idle' | 'saving' | 'saved';
 type Lang = 'en' | 'zh';
+
+/**
+ * The playground opens in `ops` so the tier that needs showing is the one you land on; the library
+ * default stays `design`, which is what an existing host keeps without changing a line. Both tiers
+ * read and write the same document — the toggle changes the panel, never the page.
+ */
+const DEFAULT_MODE: PanelMode = 'ops';
 
 function Logo() {
     return (
@@ -169,11 +180,29 @@ const iconBtnStyle: CSSProperties = {
     placeItems: 'center',
 };
 
+/**
+ * Puck UI overrides. Module-level and frozen at import: Puck keys the drawer subtree off these
+ * component identities, so rebuilding the object each render remounts the whole drawer (and wipes
+ * anything transient living in it).
+ */
+const EDITOR_OVERRIDES = {
+    ...puckOverrides,
+    // Reusable modules live in the left blocks drawer (with the templates), above the component
+    // categories — not in a header menu.
+    drawer: ({ children }: { children: ReactNode }) => (
+        <>
+            <ModulesMenu />
+            {children}
+        </>
+    ),
+};
+
 export function App() {
     const [view, setView] = useState<'edit' | 'preview'>('edit');
     const [data, setData] = useState<Data>(load);
     const [save, setSave] = useState<Save>('saved');
     const [lang, setLang] = useState<Lang>('en');
+    const [mode, setMode] = useState<PanelMode>(DEFAULT_MODE);
     const [dark, setDark] = useState(false);
     // Preview entitlement switches (default: all on). The runtime evaluates each block's
     // `visibleWhen` against this map — toggling a chip shows/hides the gated blocks live.
@@ -232,6 +261,19 @@ export function App() {
                     <SaveStatus status={save} />
                     <Seg
                         options={[
+                            { label: 'Ops', value: 'ops' },
+                            { label: 'Design', value: 'design' },
+                        ]}
+                        value={mode}
+                        onChange={(m) => {
+                            // Switching tiers remounts the editor (see `key` below), so hand it the
+                            // live document first or the remount restores stale state.
+                            setData(dataRef.current);
+                            setMode(m);
+                        }}
+                    />
+                    <Seg
+                        options={[
                             { label: 'EN', value: 'en' },
                             { label: '中文', value: 'zh' },
                         ]}
@@ -265,27 +307,23 @@ export function App() {
                 <main style={{ flex: 1, minHeight: 0 }}>
                     {view === 'edit' ? (
                         <Editor
+                            // Puck resolves a selected block's panel once, at selection, so a config
+                            // rebuilt for the new tier never reaches an already-selected block. Remount
+                            // on the tier instead — `data` was just re-seeded from the live document, so
+                            // the edits carry over and only the selection resets.
+                            key={mode}
                             manifest={manifest}
                             registry={registry}
                             data={data}
                             canvasWrapper={DpPage}
                             iframe={false}
-                            overrides={{
-                                ...puckOverrides,
-                                // Reusable modules live in the left blocks drawer (with the templates),
-                                // above the component categories — not in a header menu.
-                                drawer: ({ children }: { children: ReactNode }) => (
-                                    <>
-                                        <ModulesMenu />
-                                        {children}
-                                    </>
-                                ),
-                            }}
+                            overrides={EDITOR_OVERRIDES}
                             categories={categories}
                             locale={lang}
                             fallbackLocale="en"
                             locales={LOCALES}
                             flagCatalog={FLAG_CATALOG}
+                            mode={mode}
                             onChange={scheduleSave}
                             onPublish={(d) => {
                                 dataRef.current = d;
