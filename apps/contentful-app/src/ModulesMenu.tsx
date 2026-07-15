@@ -9,6 +9,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { usePuck } from '@puckeditor/core';
+import { revealInserted, showAddedToast } from './insert-feedback';
 import { PRESET_MODULES, cloneWithNewIds, findNodeBySelector, fromClip, readClip, toClip, writeClip, type Node } from './modules';
 
 /** A small "add" glyph — signals these cards are click-to-add (matches editor-chrome's AddIcon). */
@@ -48,10 +49,13 @@ export function ModulesMenu() {
     const selRef = useRef<Node | null>(selected);
     selRef.current = selected;
 
-    /** Append a subtree (fresh ids) to the end of the page. */
-    const insertNodes = (nodes: Node[]) => {
+    /** Append a subtree (fresh ids) to the end of the page, then show ops where it landed. */
+    const insertNodes = (nodes: Node[], label?: string) => {
         const clones = nodes.map(cloneWithNewIds);
+        const index = (appState.data.content ?? []).length;
         dispatch({ type: 'setData', data: (prev: { content: Node[] }) => ({ ...prev, content: [...(prev.content ?? []), ...clones] }) });
+        revealInserted(dispatch, index, clones[0]?.props.id as string | undefined);
+        if (label) showAddedToast(label);
     };
 
     // ⌘C / ⌘V — copy the selected block / paste a copied block (background power-user shortcuts, no UI).
@@ -108,7 +112,7 @@ export function ModulesMenu() {
                     const h = hueOf(m.name);
                     return (
                         <div key={m.id} style={{ padding: '3px 0' }}>
-                            <div className="lce-block" style={{ cursor: 'pointer' }} title="Click to add" onClick={() => insertNodes(m.content)}>
+                            <div className="lce-block" style={{ cursor: 'pointer' }} title="Click to add" onClick={() => insertNodes(m.content, m.name)}>
                                 <span className="lce-block__chip" style={{ background: `hsl(${h} 70% 93%)`, color: `hsl(${h} 55% 32%)` }}>
                                     {(m.name[0] || 'M').toUpperCase()}
                                 </span>

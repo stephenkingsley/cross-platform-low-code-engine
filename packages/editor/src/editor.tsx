@@ -37,6 +37,14 @@ export interface EditorProps {
     rootLabel?: string;
     /** Feature-flag catalog for the per-block Visibility control (entitlement keys ops gate on). */
     flagCatalog?: BuildOptions['flagCatalog'];
+    /** Which tier the config panel serves. Defaults to `design` — an existing host is unchanged. */
+    mode?: BuildOptions['mode'];
+    /** Ops mode only: keep the design tier editable instead of collapsing it into read-only "Looks". */
+    allowStyleOverride?: BuildOptions['allowStyleOverride'];
+    /** What a flag IS to this host, in ops words ("benefit", "tier", "plan"). Defaults to "benefit". */
+    flagNoun?: BuildOptions['flagNoun'];
+    /** App events a block's `action` may fire. Absent → the event name falls back to free text. */
+    eventCatalog?: BuildOptions['eventCatalog'];
 }
 
 /** Thin wrapper that turns a manifest + registry into a ready-to-use Puck editor. */
@@ -57,6 +65,10 @@ export function Editor({
     rootFields,
     rootLabel,
     flagCatalog,
+    mode,
+    allowStyleOverride,
+    flagNoun,
+    eventCatalog,
 }: EditorProps) {
     const config = useMemo(
         () =>
@@ -70,8 +82,12 @@ export function Editor({
                 rootFields,
                 rootLabel,
                 flagCatalog,
+                mode,
+                allowStyleOverride,
+                flagNoun,
+                eventCatalog,
             }),
-        [manifest, registry, canvasWrapper, categories, locale, fallbackLocale, locales, assetPicker, rootFields, rootLabel, flagCatalog],
+        [manifest, registry, canvasWrapper, categories, locale, fallbackLocale, locales, assetPicker, rootFields, rootLabel, flagCatalog, mode, allowStyleOverride, flagNoun, eventCatalog],
     );
     return (
         <Puck

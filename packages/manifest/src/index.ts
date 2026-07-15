@@ -39,6 +39,14 @@ export type FieldDescriptor =
     | { kind: 'dataMap'; itemFields?: ManifestField[] }
     | { kind: 'array'; itemFields: ManifestField[]; itemLabel?: string };
 
+/**
+ * Who a prop is tuned by, which decides the panel tier it appears in.
+ *
+ * Presentation only: a `design` field is still a normal prop, still stored, still rendered —
+ * it is merely not offered as a control to ops.
+ */
+export type FieldAudience = 'ops' | 'design';
+
 /** One configurable prop of a component. */
 export interface ManifestField {
     /** Prop name as declared on the component. */
@@ -53,6 +61,25 @@ export interface ManifestField {
     defaultValue?: unknown;
     /** Whether the prop is required (non-optional in TS). */
     required: boolean;
+    /**
+     * Overrides the editor's default tier for this prop. Unset means the editor derives it
+     * from `field.kind` (content kinds → `ops`, the rest → `design`), so nothing needs
+     * per-field authoring to get a sane tier.
+     */
+    audience?: FieldAudience;
+    /**
+     * Ops-facing help, in plain language. Distinct from {@link ManifestField.description},
+     * which is the engineer-facing JSDoc body extracted from the prop type.
+     */
+    help?: string;
+    /**
+     * Ops-facing answer labels for a `select`/`radio`, as `value → label`. Keys are the
+     * option value stringified (option values may be string/number/boolean).
+     *
+     * Reframes an option list as an OUTCOME ("Everyone except members with a benefit")
+     * rather than a token. Values not listed keep their {@link FieldOption.label}.
+     */
+    answers?: Record<string, string>;
 }
 
 /** Where a component implementation is resolved from at render time. */
@@ -117,6 +144,9 @@ export function slotFieldsOf(manifest: Manifest, type: string): string[] {
 
 // ---- JSON Schema export (protocol contract) ---------------------------------
 export * from './schema';
+
+// ---- ops-facing vocabulary (panel presentation only, never the document) -----
+export * from './vocab';
 
 // ---- i18n (localized text content) ------------------------------------------
 export * from './i18n';

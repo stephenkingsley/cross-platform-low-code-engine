@@ -1,6 +1,8 @@
-import { useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useId, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { usePuck, type ComponentData } from '@puckeditor/core';
 import {
     getByPath,
+    humanizeValue,
     introspectSample,
     mapItem,
     resolveMedia,
@@ -36,6 +38,8 @@ const inputStyle: CSSProperties = {
     boxSizing: 'border-box',
 };
 
+const selectStyle: CSSProperties = { ...inputStyle, cursor: 'pointer' };
+
 const subLabel: CSSProperties = {
     fontSize: 11,
     fontWeight: 600,
@@ -43,10 +47,194 @@ const subLabel: CSSProperties = {
     marginBottom: 4,
 };
 
+const hintStyle: CSSProperties = { fontSize: 11, color: 'var(--puck-color-grey-06, #94a3b8)', marginTop: 4 };
+
+const linkBtn: CSSProperties = {
+    background: 'none',
+    border: 'none',
+    padding: 0,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    fontSize: 12,
+    fontWeight: 600,
+    color: 'var(--puck-color-azure-05, #2680eb)',
+};
+
+const cardStyle: CSSProperties = {
+    border: '1px solid var(--puck-color-grey-10, #e5e7eb)',
+    borderRadius: 10,
+    padding: 10,
+    background: 'var(--puck-color-white, #fff)',
+};
+
 interface FieldProps {
     value?: string;
     onChange: (v: string) => void;
     label?: string;
+}
+
+// ---- ops questionnaire shell -------------------------------------------------
+//
+// The ops tier asks SCENARIOS ("who sees this card") and answers with OUTCOMES ("everyone
+// except members with Fast Track"), never with the token the document stores. Everything
+// below is presentation: the stored value is unchanged, only the question around it is.
+
+/** A question heading — the scenario, in the ops user's words. */
+const questionStyle: CSSProperties = {
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: 'var(--puck-color-grey-04, #475569)',
+    marginBottom: 8,
+    fontFamily: 'inherit',
+};
+
+const echoStyle: CSSProperties = {
+    display: 'flex',
+    gap: 6,
+    alignItems: 'flex-start',
+    marginTop: 8,
+    fontSize: 12,
+    lineHeight: 1.45,
+    color: 'var(--puck-color-grey-04, #475569)',
+};
+
+const lockCard: CSSProperties = {
+    ...cardStyle,
+    background: 'var(--puck-color-grey-11, #f8fafc)',
+    display: 'grid',
+    gap: 8,
+};
+
+const readonlyJson: CSSProperties = {
+    margin: 0,
+    padding: 8,
+    borderRadius: 6,
+    background: 'var(--puck-color-white, #fff)',
+    border: '1px solid var(--puck-color-grey-10, #e5e7eb)',
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+    fontSize: 11,
+    lineHeight: 1.5,
+    color: 'var(--puck-color-grey-03, #334155)',
+    overflowX: 'auto',
+    whiteSpace: 'pre',
+    userSelect: 'text',
+};
+
+const answerRow = (on: boolean, disabled: boolean): CSSProperties => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '7px 9px',
+    borderRadius: 8,
+    border: `1px solid ${on ? 'var(--puck-color-azure-05, #2680eb)' : 'var(--puck-color-grey-10, #e5e7eb)'}`,
+    background: on ? 'var(--puck-color-azure-11, #f0f6ff)' : 'var(--puck-color-white, #fff)',
+    fontSize: 13,
+    lineHeight: 1.35,
+    color: disabled ? 'var(--puck-color-grey-07, #94a3b8)' : 'var(--puck-color-grey-02, #1f2937)',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+});
+
+/** "ActionCard" → "action card" — the block's name as it reads inside a sentence. */
+function blockNoun(label?: string): string {
+    if (!label) return 'block';
+    return label.replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase();
+}
+
+/** The plain-language consequence of the answer above. Ops reads THIS, not the stored token. */
+function Echo({ children }: { children: ReactNode }) {
+    return (
+        <div style={echoStyle}>
+            <span style={{ color: '#15803d', flex: 'none', fontWeight: 700 }}>✓</span>
+            <span>{children}</span>
+        </div>
+    );
+}
+
+interface Answer {
+    value: string;
+    label: string;
+    /** Unpickable answer (e.g. gating with no flag catalog configured to gate on). */
+    disabled?: boolean;
+}
+
+/**
+ * The answers to one ops question. Radios, not a `select`: the answers are outcomes to weigh
+ * against each other, and a collapsed dropdown hides the very alternatives ops is choosing between.
+ */
+function AnswerRadios({ value, answers, onChange }: { value: string; answers: Answer[]; onChange: (v: string) => void }) {
+    const group = useId();
+    return (
+        <div style={{ display: 'grid', gap: 4 }}>
+            {answers.map((a) => {
+                const on = a.value === value;
+                return (
+                    <label key={a.value} style={answerRow(on, !!a.disabled)}>
+                        <input
+                            type="radio"
+                            name={group}
+                            checked={on}
+                            disabled={a.disabled}
+                            onChange={() => onChange(a.value)}
+                            style={{ margin: 0, flex: 'none', accentColor: 'var(--puck-color-azure-05, #2680eb)' }}
+                        />
+                        <span>{a.label}</span>
+                    </label>
+                );
+            })}
+        </div>
+    );
+}
+
+/**
+ * A setting ops must SEE but must never overwrite. Read-only by construction — there is no
+ * onChange path at all, so no interaction can clobber what an engineer set up.
+ */
+function LockedRow({ text, json, revealLabel }: { text: string; json?: string; revealLabel?: string }) {
+    const [open, setOpen] = useState(false);
+    return (
+        <div style={lockCard}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 12, color: 'var(--puck-color-grey-04, #475569)', lineHeight: 1.4 }}>🔒 {text}</span>
+                {json != null ? (
+                    <button type="button" style={{ ...linkBtn, flex: 'none' }} onClick={() => setOpen((o) => !o)}>
+                        {open ? 'Hide rule' : (revealLabel ?? 'Show rule')}
+                    </button>
+                ) : null}
+            </div>
+            {open && json != null ? <pre style={readonlyJson}>{json}</pre> : null}
+        </div>
+    );
+}
+
+/**
+ * Read the selected block's props and patch them in place.
+ *
+ * Sibling props are written with a `replace` dispatch, NOT a Puck `type:'object'` field: an
+ * object field would nest every value under one key and change the saved document. The document
+ * format is fixed — this tier is presentation only.
+ */
+function useSelectedBlock() {
+    const { selectedItem, dispatch, getSelectorForId } = usePuck();
+    const props = (selectedItem?.props ?? {}) as Record<string, unknown>;
+    const setProp = (name: string, value: unknown) => {
+        if (!selectedItem) return;
+        const sel = getSelectorForId(selectedItem.props.id);
+        if (!sel) return;
+        const next: Record<string, unknown> = { ...selectedItem.props };
+        // `undefined` removes the key — an unset prop falls through to the component's own
+        // default, which is exactly what "reset to design" means.
+        if (value === undefined) delete next[name];
+        else next[name] = value;
+        dispatch({
+            type: 'replace',
+            destinationIndex: sel.index,
+            destinationZone: sel.zone,
+            data: { ...selectedItem, props: next } as ComponentData,
+        });
+    };
+    return { props, setProp, selected: !!selectedItem };
 }
 
 /** One entry in the feature-flag catalog the Visibility control picks from. */
@@ -61,10 +249,20 @@ interface VisibilityFieldProps {
     value?: unknown; // the reserved `visibleWhen` condition
     onChange: (v: unknown) => void;
     flags: VisibilityFlag[];
+    /** The block's name, so the question and echo can name what they're talking about. */
+    blockLabel?: string;
+    /**
+     * What a flag IS to this host, in that host's words ("benefit", "tier", "plan"). Defaults to the
+     * generic "flag": this engine ships to several products, so the panel must not bake one
+     * product's domain word into the shared builder — the host owns the noun.
+     */
+    flagNoun?: string;
 }
 
+type VisibilityMode = 'always' | 'on' | 'off' | 'advanced';
+
 /** Reduce a stored `visibleWhen` condition to the simple editor model. */
-function parseVisibility(v: unknown): { mode: 'always' | 'on' | 'off' | 'advanced'; flag?: string } {
+function parseVisibility(v: unknown): { mode: VisibilityMode; flag?: string } {
     if (v == null) return { mode: 'always' };
     if (typeof v === 'string') return { mode: 'on', flag: v };
     if (typeof v === 'object' && v !== null && 'not' in v && typeof (v as { not: unknown }).not === 'string') {
@@ -73,38 +271,94 @@ function parseVisibility(v: unknown): { mode: 'always' | 'on' | 'off' | 'advance
     return { mode: 'advanced' };
 }
 
+/** A flag's ops-facing name. The catalog's `label` if authored, else the raw key. */
+const flagLabel = (flags: VisibilityFlag[], key: string): string => flags.find((f) => f.key === key)?.label ?? key;
+
 /**
- * Universal per-block visibility control. Writes the reserved `visibleWhen` prop as a declarative
- * condition referencing a feature-flag KEY (from the host-supplied catalog) — the runtime hides
- * the block when the host's flags say the user isn't entitled. Common cases (show/hide on one
- * flag) are point-and-click; compound `all/any/equals` conditions are edited in the JSON view.
+ * The stored condition as a sentence — naming BOTH populations, because "who does NOT see this"
+ * is the half ops gets wrong and cannot check on the canvas.
  */
-export function VisibilityField({ value, onChange, flags }: VisibilityFieldProps) {
+function describeVisibility(value: unknown, flags: VisibilityFlag[], block: string, flagNoun: string): string {
     const { mode, flag } = parseVisibility(value);
-    const firstFlag = flags[0]?.key ?? '';
-    const current = flag ?? firstFlag;
+    if (mode === 'advanced') return `Who sees this ${block} is decided by a custom rule an engineer set up.`;
+    if (mode === 'always') return `Everyone sees this ${block}.`;
+    const name = flagLabel(flags, flag ?? '');
+    if (!flag) return `No one is picked out yet — right now everyone sees this ${block}.`;
+    if (mode === 'on') return `Only users with the ${name} ${flagNoun} see this ${block}. Everyone else sees the page without it.`;
+    return `Everyone sees this ${block} — except users with the ${name} ${flagNoun}, who see the page without it.`;
+}
+
+/**
+ * "Who sees this block" — the universal per-block visibility question.
+ *
+ * Writes the reserved `visibleWhen` prop as a declarative condition referencing a feature-flag KEY
+ * (from the host-supplied catalog); the runtime hides the block when the host's flags say the user
+ * isn't entitled. The answers are populations ("everyone EXCEPT users with this flag"), not the
+ * flag's own ON/OFF state — naming the flag's state is the phrasing ops reliably inverts.
+ */
+export function VisibilityField({ value, onChange, flags, blockLabel, flagNoun = 'flag' }: VisibilityFieldProps) {
+    const { mode, flag } = parseVisibility(value);
+    const noun = blockNoun(blockLabel);
+
+    // A compound condition (all/any/equals/nested not) an engineer wrote. It has no answer in this
+    // questionnaire, so it gets NO control: any editable mode would let a stray click emit
+    // `undefined` ("Everyone") and silently destroy a rule ops can neither see nor rebuild.
+    if (mode === 'advanced') {
+        return (
+            <div style={{ fontFamily: 'inherit' }}>
+                <div style={questionStyle}>Who sees this {noun}</div>
+                <LockedRow text="A custom rule set up by an engineer." json={JSON.stringify(value, null, 2)} revealLabel="Show rule" />
+            </div>
+        );
+    }
+
+    const noFlags = flags.length === 0;
+    const current = flag ?? '';
+    // Picking "only users with this flag" is a QUESTION, not an answer — the answer is which flag,
+    // and it isn't given until the select below. Falling back to `flags[0]` would make one click
+    // silently gate the block to whatever the catalog happens to list first, with no confirmation
+    // and nothing on the canvas to reveal it. So the choice is held here and written only once ops
+    // names a flag; until then the document still says "Everyone", which is the truth.
+    const [pending, setPending] = useState<'on' | 'off' | null>(null);
+    const shown = pending ?? mode;
     const setMode = (m: string) => {
-        if (m === 'always') onChange(undefined);
-        else if (m === 'on') onChange(current);
-        else if (m === 'off') onChange({ not: current });
+        if (m === 'always') {
+            setPending(null);
+            onChange(undefined);
+        } else if (noFlags) {
+            // no flag can be named, so there is no answer to hold
+        } else if (current) {
+            setPending(null);
+            onChange(m === 'off' ? { not: current } : current);
+        } else {
+            setPending(m as 'on' | 'off'); // reveal the picker; store nothing yet
+        }
     };
-    const setFlag = (k: string) => onChange(mode === 'off' ? { not: k } : k);
+    const setFlag = (k: string) => {
+        const m = pending ?? mode;
+        setPending(null);
+        onChange(m === 'off' ? { not: k } : k);
+    };
+
     return (
-        <div>
-            <div style={labelStyle}>Visibility</div>
-            <select style={{ ...inputStyle, cursor: 'pointer' }} value={mode} onChange={(e) => setMode(e.target.value)}>
-                <option value="always">Always show</option>
-                <option value="on">Show when flag ON</option>
-                <option value="off">Show when flag OFF</option>
-                {mode === 'advanced' && <option value="advanced">Advanced (edit in JSON)</option>}
-            </select>
-            {(mode === 'on' || mode === 'off') && (
+        <div style={{ fontFamily: 'inherit' }}>
+            <div style={questionStyle}>Who sees this {noun}</div>
+            <AnswerRadios
+                value={shown}
+                onChange={setMode}
+                answers={[
+                    { value: 'always', label: 'Everyone' },
+                    { value: 'on', label: `Only users with this ${flagNoun}`, disabled: noFlags },
+                    { value: 'off', label: `Everyone EXCEPT users with this ${flagNoun}`, disabled: noFlags },
+                ]}
+            />
+            {shown === 'on' || shown === 'off' ? (
                 <div style={{ marginTop: 8 }}>
-                    <div style={subLabel}>Feature flag</div>
-                    {/* Fixed list — the option's value IS the flag the server returns (label === value,
-                        no hidden key), so what ops picks is exactly what the document stores. */}
-                    <select style={{ ...inputStyle, cursor: 'pointer' }} value={current} onChange={(e) => setFlag(e.target.value)}>
-                        {flags.length === 0 && <option value="">(no flags configured)</option>}
+                    <div style={subLabel}>Which {flagNoun}?</div>
+                    {/* The option's VALUE stays the raw key the server returns — the label is a
+                        display gloss only, so what ops picks is exactly what the document stores. */}
+                    <select style={selectStyle} value={current} onChange={(e) => setFlag(e.target.value)}>
+                        {!current ? <option value="">Choose a {flagNoun}…</option> : null}
                         {flags.map((f) => (
                             <option key={f.key} value={f.key}>
                                 {f.label ?? f.key}
@@ -112,10 +366,15 @@ export function VisibilityField({ value, onChange, flags }: VisibilityFieldProps
                         ))}
                     </select>
                 </div>
+            ) : null}
+            {/* While a mode is pending, the radios and the document disagree — so say what is actually
+                stored rather than echoing a gate that isn't there yet. */}
+            {pending && !current ? (
+                <div style={hintStyle}>Nothing changes until you pick a {flagNoun}.</div>
+            ) : (
+                <Echo>{describeVisibility(value, flags, noun, flagNoun)}</Echo>
             )}
-            {mode === 'advanced' && (
-                <div style={{ ...subLabel, marginTop: 8, fontWeight: 400 }}>Advanced condition (all / any / equals…) — edit in the {'{ } JSON'} view.</div>
-            )}
+            {noFlags ? <div style={hintStyle}>No {flagNoun}s are configured for this project yet.</div> : null}
         </div>
     );
 }
@@ -448,66 +707,387 @@ export function ImageField({ value, onChange, label, assetPicker }: ImageFieldPr
     );
 }
 
+/** One entry in the host's catalog of app events a block may fire. */
+export interface ActionEvent {
+    /** The event name stored in the document and handed to the host's dispatcher. */
+    name: string;
+    /** Ops-facing label for the dropdown (defaults to `name`). */
+    label?: string;
+}
+
 interface ActionFieldProps {
     value?: Action;
     onChange: (v: Action | undefined) => void;
     label?: string;
+    /** The block's name, so the question and echo can name what they're talking about. */
+    blockLabel?: string;
+    /** Host-declared app events. Empty/undefined → the event name falls back to a text input. */
+    eventCatalog?: ActionEvent[];
 }
 
-const selectStyle: CSSProperties = { ...inputStyle, cursor: 'pointer' };
+/** The four OUTCOMES a tap can have. Two of them ('route'/'url') store the same `navigate`. */
+type ActionMode = 'none' | 'route' | 'url' | 'event';
 
-/** Configure a declarative click action (navigate / emit event). Stored as data in the doc. */
-export function ActionField({ value, onChange, label }: ActionFieldProps) {
-    const type = value?.type ?? 'none';
+const EXTERNAL_HREF = /^(https?:)?\/\//i;
+
+/**
+ * Which outcome a stored {@link Action} represents. `navigate` splits on the href — a web address
+ * vs an in-app route — with `target` as the tiebreaker while the href is still empty.
+ */
+function actionMode(v: Action | undefined): ActionMode {
+    if (!v) return 'none';
+    if (v.type === 'event') return 'event';
+    return EXTERNAL_HREF.test(v.href) || v.target === '_blank' ? 'url' : 'route';
+}
+
+/** An event's ops-facing name. The catalog's `label` if authored, else the raw name. */
+const eventLabel = (events: ActionEvent[], name: string): string => events.find((e) => e.name === name)?.label ?? name;
+
+/** The stored action as a sentence, including the "you aren't done yet" cases. */
+function describeAction(value: Action | undefined, noun: string, events: ActionEvent[] = []): string {
+    const mode = actionMode(value);
+    if (mode === 'none') return `Nothing happens when someone taps this ${noun} — it isn't tappable.`;
+    if (mode === 'event') {
+        const name = value?.type === 'event' ? value.name : '';
+        return name
+            ? `Tapping this ${noun} tells the app to: ${eventLabel(events, name)}.`
+            : `Tapping this ${noun} does nothing yet — pick what it tells the app to do.`;
+    }
+    const href = value?.type === 'navigate' ? value.href : '';
+    if (!href) return `Tapping this ${noun} does nothing yet — fill in where it goes.`;
+    return mode === 'url'
+        ? `Tapping this ${noun} opens ${href} in a browser.`
+        : `Tapping this ${noun} opens ${href} inside the app.`;
+}
+
+/**
+ * "When someone taps this block" — the universal per-block interaction question.
+ *
+ * Stores the same declarative {@link Action} the runtime already understands; only the framing
+ * changes. 'Open a page in the app' and 'Open a website' both store a `navigate` — they differ in
+ * the href they hint at and the `target` they set, which is the distinction ops actually reasons
+ * about (and the one they can't infer from a raw href box).
+ */
+export function ActionField({ value, onChange, label, blockLabel, eventCatalog }: ActionFieldProps) {
+    const noun = blockNoun(blockLabel);
+    const events = eventCatalog ?? [];
+    const mode = actionMode(value);
+    const href = value?.type === 'navigate' ? value.href : '';
+    const name = value?.type === 'event' ? value.name : '';
+    // Only the radios decide `target`. Editing the href keeps whatever is stored, so an
+    // engineer's deliberate "website, same tab" survives ops retyping the address.
+    const navTarget = value?.type === 'navigate' && value.target ? value.target : mode === 'url' ? '_blank' : '_self';
+
+    const setMode = (m: string) => {
+        if (m === 'none') return onChange(undefined);
+        if (m === 'route') return onChange({ type: 'navigate', href: EXTERNAL_HREF.test(href) ? '' : href, target: '_self' });
+        // Carry the href across only when it still fits the new outcome — a route ('/offers') is
+        // not a web address, and silently keeping it would ship a broken link.
+        if (m === 'url') return onChange({ type: 'navigate', href: EXTERNAL_HREF.test(href) ? href : '', target: '_blank' });
+        return onChange(value?.type === 'event' ? value : { type: 'event', name: '' });
+    };
+
+    // A stored name that isn't in the catalog is still offered, labelled as such: dropping it would
+    // make the select show some OTHER event as if it were the configured one.
+    const unlisted = name && !events.some((e) => e.name === name);
+
     return (
         <div style={{ fontFamily: 'inherit' }}>
-            {label ? <div style={labelStyle}>{label}</div> : null}
-            <div style={{ display: 'grid', gap: 6 }}>
-                <select
-                    value={type}
-                    style={selectStyle}
-                    onChange={(e) => {
-                        const t = e.target.value;
-                        if (t === 'navigate')
-                            onChange({ type: 'navigate', href: value?.type === 'navigate' ? value.href : '', target: '_self' });
-                        else if (t === 'event')
-                            onChange({ type: 'event', name: value?.type === 'event' ? value.name : '' });
-                        else onChange(undefined);
-                    }}
-                >
-                    <option value="none">None</option>
-                    <option value="navigate">Navigate (URL / route)</option>
-                    <option value="event">Emit event</option>
-                </select>
-                {value?.type === 'navigate' ? (
-                    <>
-                        <input
-                            type="text"
-                            value={value.href}
-                            placeholder="/path or https://…"
-                            style={inputStyle}
-                            onChange={(e) => onChange({ ...value, href: e.target.value })}
-                        />
-                        <select
-                            value={value.target ?? '_self'}
-                            style={selectStyle}
-                            onChange={(e) => onChange({ ...value, target: e.target.value as '_self' | '_blank' })}
-                        >
-                            <option value="_self">Same tab</option>
-                            <option value="_blank">New tab</option>
-                        </select>
-                    </>
-                ) : null}
-                {value?.type === 'event' ? (
+            <div style={questionStyle}>When someone taps this {noun}</div>
+            {label ? <div style={{ ...subLabel, marginBottom: 6 }}>{label}</div> : null}
+            <AnswerRadios
+                value={mode}
+                onChange={setMode}
+                answers={[
+                    { value: 'none', label: "Nothing happens — it isn't tappable" },
+                    { value: 'route', label: 'Open a page in the app' },
+                    { value: 'url', label: 'Open a website' },
+                    { value: 'event', label: 'Tell the app to do something' },
+                ]}
+            />
+            {mode === 'route' || mode === 'url' ? (
+                <div style={{ marginTop: 8 }}>
+                    <div style={subLabel}>{mode === 'url' ? 'Web address' : 'Which page?'}</div>
                     <input
                         type="text"
-                        value={value.name}
-                        placeholder="event name (e.g. addToCart)"
+                        value={href}
+                        placeholder={mode === 'url' ? 'https://example.com/offers' : '/offers'}
                         style={inputStyle}
-                        onChange={(e) => onChange({ ...value, name: e.target.value })}
+                        onChange={(e) => onChange({ type: 'navigate', href: e.target.value, target: navTarget })}
                     />
-                ) : null}
+                </div>
+            ) : null}
+            {mode === 'event' ? (
+                <div style={{ marginTop: 8 }}>
+                    <div style={subLabel}>What should it do?</div>
+                    {events.length > 0 ? (
+                        <select
+                            style={selectStyle}
+                            value={name}
+                            // Spread the stored action so an engineer-authored `payload` survives a name change.
+                            onChange={(e) => onChange({ ...(value?.type === 'event' ? value : { type: 'event' as const, name: '' }), name: e.target.value })}
+                        >
+                            <option value="">— pick one —</option>
+                            {unlisted ? <option value={name}>{name} (not in this project's list)</option> : null}
+                            {events.map((e) => (
+                                <option key={e.name} value={e.name}>
+                                    {e.label ?? e.name}
+                                </option>
+                            ))}
+                        </select>
+                    ) : (
+                        <input
+                            type="text"
+                            value={name}
+                            placeholder="event name (e.g. addToCart)"
+                            style={inputStyle}
+                            onChange={(e) => onChange({ ...(value?.type === 'event' ? value : { type: 'event' as const, name: '' }), name: e.target.value })}
+                        />
+                    )}
+                </div>
+            ) : null}
+            <Echo>{describeAction(value, noun, events)}</Echo>
+        </div>
+    );
+}
+
+interface HideWhenEmptyFieldProps {
+    value?: boolean;
+    onChange: (v: boolean) => void;
+    /** The block's name, so the question and echo can name what they're talking about. */
+    blockLabel?: string;
+}
+
+/** The stored `hideWhenEmpty` as a sentence. */
+function describeHideWhenEmpty(value: boolean | undefined, noun: string): string {
+    return value
+        ? `If everything inside is hidden, the ${noun} disappears too — no empty gap on the page.`
+        : `If everything inside is hidden, an empty ${noun} still takes up space on the page.`;
+}
+
+/**
+ * "If everything inside is hidden" — the third reserved question.
+ *
+ * Only meaningful for a block with slots: its children can each be gated away, leaving the frame
+ * behind. Stores the same reserved `hideWhenEmpty` boolean the runtime walker already reads.
+ */
+export function HideWhenEmptyField({ value, onChange, blockLabel }: HideWhenEmptyFieldProps) {
+    const noun = blockNoun(blockLabel);
+    return (
+        <div style={{ fontFamily: 'inherit' }}>
+            <div style={questionStyle}>If everything inside is hidden</div>
+            <AnswerRadios
+                value={value ? 'hide' : 'keep'}
+                onChange={(v) => onChange(v === 'hide')}
+                answers={[
+                    { value: 'keep', label: 'Leave an empty box on the page' },
+                    { value: 'hide', label: `Hide the ${noun} too` },
+                ]}
+            />
+            <Echo>{describeHideWhenEmpty(value, noun)}</Echo>
+        </div>
+    );
+}
+
+// ---- the design tier, shown to ops read-only ---------------------------------
+
+/** Structural equality, good enough for prop values (scalars and small token objects). */
+const sameValue = (a: unknown, b: unknown): boolean => a === b || JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+/**
+ * Whether a style prop has been moved off its design default.
+ *
+ * An UNSET prop is never drift: the component falls through to its own default, which is the
+ * design default the manifest recorded (the extractor reads the same `@default`/destructuring
+ * default the component runs on).
+ */
+function isDrifted(f: ManifestField, value: unknown): boolean {
+    if (value === undefined) return false;
+    return !sameValue(value, f.defaultValue);
+}
+
+export interface LooksRowProps {
+    /** The design-tier fields, ABSENT from the ops panel — listed here read-only. */
+    fields: ManifestField[];
+    /** The block's name, for the heading and the ticket text. */
+    blockLabel: string;
+}
+
+const looksRowStyle: CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: '1fr auto auto',
+    gap: 8,
+    alignItems: 'center',
+    fontSize: 12,
+    lineHeight: 1.4,
+    minWidth: 0,
+};
+
+/**
+ * Read-only gloss for a design value, in the order the wording actually exists.
+ *
+ * The token vocabulary wins first: a `select`'s option labels ARE the raw tokens (`classifyScalar`
+ * emits `{ label: value }` for a union member), so consulting options first would undo `md` →
+ * "Comfortable". Only when the vocabulary has no scale for the field — booleans, chiefly — do we
+ * fall back to the field's own option label, which is where On/Off (and any `@yes`/`@no` override)
+ * lives. Without that fallback a boolean surfaces to ops as a raw `true`.
+ */
+function glossValue(f: ManifestField, v: unknown): string {
+    const scaled = humanizeValue(f.name, v);
+    if (scaled && scaled !== String(v)) return scaled; // the vocabulary had a real gloss
+    const options = (f.field as { options?: { label: string; value: unknown }[] }).options;
+    return options?.find((o) => o.value === v)?.label ?? scaled;
+}
+
+/**
+ * One design value, editable, once the row is unlocked. Renders from the manifest field itself —
+ * options become a picker glossed into ops words, anything else falls back to a raw input — so it
+ * covers every design prop on every component without per-component work.
+ */
+function LooksControl({ f, value, onChange }: { f: ManifestField; value: unknown; onChange: (v: unknown) => void }) {
+    const options = (f.field as { options?: { label: string; value: unknown }[] }).options ?? [];
+    if (options.length > 0) {
+        return (
+            <select
+                style={{ ...selectStyle, height: 26, fontSize: 12 }}
+                value={String(value)}
+                aria-label={f.label}
+                onChange={(e) => {
+                    // Map back to the option's REAL value — `md` is a string but `true` is a boolean,
+                    // and a select only ever hands back strings.
+                    const hit = options.find((o) => String(o.value) === e.target.value);
+                    onChange(hit ? hit.value : e.target.value);
+                }}
+            >
+                {options.map((o) => (
+                    <option key={String(o.value)} value={String(o.value)}>
+                        {glossValue(f, o.value)}
+                    </option>
+                ))}
+            </select>
+        );
+    }
+    // A text box can only round-trip a scalar. Anything structured (a `dataMap` binding, an array)
+    // would stringify to "[object Object]" and be destroyed by the first keystroke, so it stays
+    // read-only here — such a field belongs in its own custom field, not in the Looks row.
+    if (value !== null && value !== undefined && typeof value === 'object') {
+        return <span style={{ color: 'var(--puck-color-grey-06, #94a3b8)', fontStyle: 'italic' }}>set elsewhere</span>;
+    }
+    const numeric = f.field.kind === 'number';
+    return (
+        <input
+            style={{ ...selectStyle, height: 26, fontSize: 12 }}
+            type={numeric ? 'number' : 'text'}
+            value={value === undefined || value === null ? '' : String(value)}
+            aria-label={f.label}
+            onChange={(e) => onChange(numeric ? (e.target.value === '' ? undefined : Number(e.target.value)) : e.target.value)}
+        />
+    );
+}
+
+/**
+ * The design tier, folded into ONE row: read-only by default, editable behind an explicit unlock.
+ *
+ * These props are absent from Puck's field map in ops mode, so the row IS the only control — it
+ * reads and writes the block's sibling props directly. Locked-by-default keeps the look designers
+ * own out of the way of the questions ops came here to answer; the unlock exists because the team
+ * shipping the page cannot always wait for a designer. Unlocking is scoped to the selected block
+ * and lapses the moment you select another, so it stays a deliberate act rather than a mode you
+ * forget you're in. Drift from the manifest default is always called out, locked or not.
+ */
+export function LooksRow({ fields, blockLabel }: LooksRowProps) {
+    const { props, setProp, selected } = useSelectedBlock();
+    const [copied, setCopied] = useState<'idle' | 'copied' | 'failed'>('idle');
+    const [unlockedId, setUnlockedId] = useState<string | null>(null);
+    if (fields.length === 0 || !selected) return null;
+
+    const blockId = typeof props.id === 'string' ? props.id : null;
+    const unlocked = blockId != null && unlockedId === blockId;
+
+    const drifted = fields.filter((f) => isDrifted(f, props[f.name]));
+    const shownValue = (f: ManifestField): unknown => (props[f.name] === undefined ? f.defaultValue : props[f.name]);
+
+    const ticket = () =>
+        [
+            `${blockLabel} — Looks (set by design)`,
+            ...fields.map((f) => {
+                const v = shownValue(f);
+                const line = `• ${f.label}: ${glossValue(f, v) || '—'}  (${f.name} = ${JSON.stringify(v ?? null)})`;
+                return isDrifted(f, props[f.name])
+                    ? `${line}  ← changed; design default is ${JSON.stringify(f.defaultValue ?? null)}`
+                    : line;
+            }),
+        ].join('\n');
+
+    const copy = async () => {
+        try {
+            await navigator.clipboard.writeText(ticket());
+            setCopied('copied');
+        } catch {
+            // Clipboard access can be denied (insecure context, permissions) — say so rather
+            // than leave ops believing they pasted something.
+            setCopied('failed');
+        }
+        window.setTimeout(() => setCopied('idle'), 2000);
+    };
+
+    return (
+        <div style={{ ...lockCard, fontFamily: 'inherit' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--puck-color-grey-04, #475569)' }}>
+                    {unlocked ? '🔓' : '🔒'} Looks — set by design
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flex: 'none' }}>
+                    {drifted.length > 0 ? (
+                        <span style={{ fontSize: 11, color: '#b45309' }}>
+                            · {drifted.length} {drifted.length === 1 ? 'change' : 'changes'} from design ⚠
+                        </span>
+                    ) : null}
+                    <button
+                        type="button"
+                        style={{ ...linkBtn, fontSize: 11 }}
+                        title={unlocked ? 'Lock these back' : 'Edit the look of this block'}
+                        onClick={() => setUnlockedId(unlocked ? null : blockId)}
+                    >
+                        {unlocked ? 'Done' : 'Unlock to edit'}
+                    </button>
+                </span>
             </div>
+            <div style={{ display: 'grid', gap: 5 }}>
+                {fields.map((f) => {
+                    const off = isDrifted(f, props[f.name]);
+                    return (
+                        <div key={f.name} style={looksRowStyle}>
+                            <span style={{ color: 'var(--puck-color-grey-06, #94a3b8)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {f.label}
+                            </span>
+                            {unlocked ? (
+                                <LooksControl f={f} value={shownValue(f)} onChange={(v) => setProp(f.name, v)} />
+                            ) : (
+                                <span style={{ color: off ? '#b45309' : 'var(--puck-color-grey-03, #334155)', fontWeight: off ? 600 : 400 }}>
+                                    {glossValue(f, shownValue(f)) || '—'}
+                                </span>
+                            )}
+                            {off ? (
+                                <button
+                                    type="button"
+                                    title={`Reset ${f.label} to the design default`}
+                                    aria-label={`Reset ${f.label} to the design default`}
+                                    style={{ ...linkBtn, fontSize: 13 }}
+                                    onClick={() => setProp(f.name, f.defaultValue)}
+                                >
+                                    ↺
+                                </button>
+                            ) : (
+                                <span />
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+            <button type="button" style={{ ...linkBtn, justifySelf: 'start' }} onClick={copy}>
+                {copied === 'copied' ? 'Copied ✓' : copied === 'failed' ? "Couldn't copy — select the values above" : 'Copy for a ticket'}
+            </button>
         </div>
     );
 }
@@ -529,14 +1109,7 @@ const monoInput: CSSProperties = {
     fontSize: 12,
     lineHeight: 1.5,
 };
-const hintStyle: CSSProperties = { fontSize: 11, color: 'var(--puck-color-grey-06, #94a3b8)', marginTop: 4 };
 const errStyle: CSSProperties = { fontSize: 11, color: '#b42318', marginTop: 4 };
-const cardStyle: CSSProperties = {
-    border: '1px solid var(--puck-color-grey-10, #e5e7eb)',
-    borderRadius: 10,
-    padding: 10,
-    background: 'var(--puck-color-white, #fff)',
-};
 const discloseBtn: CSSProperties = {
     display: 'flex',
     justifyContent: 'space-between',
@@ -550,16 +1123,6 @@ const discloseBtn: CSSProperties = {
     fontSize: 13,
     fontWeight: 600,
     color: 'var(--puck-color-grey-03, #334155)',
-};
-const linkBtn: CSSProperties = {
-    background: 'none',
-    border: 'none',
-    padding: 0,
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-    fontSize: 12,
-    fontWeight: 600,
-    color: 'var(--puck-color-azure-05, #2680eb)',
 };
 const chipStyle: CSSProperties = {
     fontFamily: 'ui-monospace, Menlo, monospace',
