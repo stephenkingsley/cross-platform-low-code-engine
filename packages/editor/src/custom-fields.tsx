@@ -1,9 +1,12 @@
 import { useId, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { usePuck, type ComponentData } from '@puckeditor/core';
 import {
+    applyTemplate,
     getByPath,
+    hasTemplate,
     humanizeValue,
     introspectSample,
+    templatePaths,
     mapItem,
     resolveMedia,
     TEMPLATE_FILTER_HINT,
@@ -387,6 +390,8 @@ interface LocalizedFieldProps {
     label?: string;
     locales: string[];
     multiline?: boolean;
+    /** A real sample of the data the host will pass, for the live preview + insert chips. */
+    sample?: Record<string, unknown>;
 }
 
 /**
@@ -394,10 +399,108 @@ interface LocalizedFieldProps {
  * document carries every language. A legacy plain string shows in the first locale and
  * upgrades to a map on edit (runtime/editor resolve either form).
  */
-export function LocalizedTextField({ value, onChange, label, locales, multiline }: LocalizedFieldProps) {
+/**
+ * The live preview + typo guard under a text field carrying `{{ … }}`.
+ *
+ * Ops types the path by hand, because the host's data is dynamic and cannot be enumerated up front.
+ * That makes a typo the expensive failure here: an unresolved slot renders as an empty string, and
+ * an empty string is indistinguishable from a value that happened to be blank — so the page looks
+ * fine in the editor and ships a half-written sentence. Resolving against a real sample response
+ * turns that invisible mistake into a visible one, before publishing.
+ *
+ * It resolves with {@link applyTemplate} — the SAME function the runtime uses — so what ops reads
+ * here is what ships, rather than a lookalike that can drift.
+ */
+function TemplatePreview({ text, sample }: { text: string; sample: Record<string, unknown> }) {
+    const unknown = templatePaths(text).filter((p) => getByPath(sample, p) === undefined);
+    return (
+        <div style={{ display: 'grid', gap: 3, marginTop: 5 }}>
+            <div style={{ fontSize: 11.5, color: 'var(--puck-color-grey-04, #475569)', lineHeight: 1.45 }}>
+                <span style={{ color: 'var(--puck-color-grey-06, #94a3b8)' }}>Reads as </span>
+                {applyTemplate(text, sample)}
+            </div>
+            {unknown.length ? (
+                <div style={{ fontSize: 11, color: '#b42318', lineHeight: 1.45 }}>
+                    ⚠ Nothing named {unknown.map((u) => `"${u}"`).join(', ')} in the sample data — that part will be blank.
+                </div>
+            ) : null}
+        </div>
+    );
+}
+
+const dataChipStyle: CSSProperties = {
+    border: '1px solid var(--puck-color-azure-09, #cfe0fb)',
+    background: 'var(--puck-color-azure-11, #f0f6ff)',
+    color: 'var(--puck-color-azure-04, #1d4ed8)',
+    borderRadius: 999,
+    padding: '3px 9px',
+    fontSize: 11,
+    fontWeight: 600,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+};
+
+/**
+ * Click-to-insert row for the paths found in the sample response — the "merge tags" of an email
+ * template. Best-effort only: the host's data is dynamic, so this shows what a REAL response
+ * happened to contain, not a promise of what will always be there. Ops can type any path; these
+ * just save the typing (and the guessing) for the ones we can see.
+ */
+function PlaceholderBar({ items, onInsert }: { items: DiscoveredField[]; onInsert: (token: string) => void }) {
+    if (!items.length) return null;
+    return (
+        <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'wrap', marginTop: 6 }}>
+            <span style={{ fontSize: 11, color: 'var(--puck-color-grey-06, #94a3b8)' }}>Insert</span>
+            {items.map((p) => (
+                <button
+                    key={p.path}
+                    type="button"
+                    style={dataChipStyle}
+                    title={p.sample != null ? `e.g. ${String(p.sample)}` : p.type}
+                    // Keep the caret where it is: a plain click would blur the input first and the
+                    // placeholder would land at the end instead of where ops is typing.
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => onInsert(`{{ ${p.path} }}`)}
+                >
+                    {p.path}
+                </button>
+            ))}
+        </div>
+    );
+}
+
+export function LocalizedTextField({ value, onChange, label, locales, multiline, sample }: LocalizedFieldProps) {
     const map: Record<string, string> =
         typeof value === 'string' ? { [locales[0]]: value } : { ...(value ?? {}) };
     const set = (loc: string, v: string) => onChange({ ...map, [loc]: v });
+    // Paths a real response actually contained. Re-derived only when the sample changes.
+    const discovered = useMemo(() => (sample ? introspectSample(sample) : []), [sample]);
+
+    // Which box the caret was last in, so a chip inserts THERE. Each locale writes its own
+    // sentence around the same values, so "which language am I editing" is the whole question.
+    const focused = useRef<{ loc: string; el: HTMLInputElement | HTMLTextAreaElement } | null>(null);
+    const insert = (token: string) => {
+        const f = focused.current;
+        const loc = f?.loc ?? locales[0];
+        const cur = map[loc] ?? '';
+        const el = f?.el;
+        if (!el) {
+            set(loc, cur ? `${cur}${token}` : token);
+            return;
+        }
+        const from = el.selectionStart ?? cur.length;
+        const to = el.selectionEnd ?? from;
+        set(loc, cur.slice(0, from) + token + cur.slice(to));
+        // Put the caret after what we just inserted, so ops can keep typing the sentence.
+        // A timer, not requestAnimationFrame: rAF is a rendering optimisation the browser may
+        // withhold, and the caret would silently stay put.
+        const at = from + token.length;
+        window.setTimeout(() => {
+            el.focus();
+            el.setSelectionRange(at, at);
+        }, 0);
+    };
+
     return (
         <div style={{ fontFamily: 'inherit' }}>
             {label ? <div style={labelStyle}>{label}</div> : null}
@@ -407,22 +510,26 @@ export function LocalizedTextField({ value, onChange, label, locales, multiline 
                         key={loc}
                         style={{ display: 'flex', gap: 6, alignItems: multiline ? 'flex-start' : 'center' }}
                     >
-                        <span
-                            style={{
-                                width: 36,
-                                flex: 'none',
-                                fontSize: 11,
-                                fontWeight: 600,
-                                color: 'var(--puck-color-grey-06, #94a3b8)',
-                                paddingTop: multiline ? 9 : 0,
-                            }}
-                        >
-                            {LOCALE_LABEL[loc] ?? loc}
-                        </span>
+                        {/* One locale = no language to choose, so the tag would just be noise. */}
+                        {locales.length > 1 ? (
+                            <span
+                                style={{
+                                    width: 36,
+                                    flex: 'none',
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    color: 'var(--puck-color-grey-06, #94a3b8)',
+                                    paddingTop: multiline ? 9 : 0,
+                                }}
+                            >
+                                {LOCALE_LABEL[loc] ?? loc}
+                            </span>
+                        ) : null}
                         {multiline ? (
                             <textarea
                                 value={map[loc] ?? ''}
                                 onChange={(e) => set(loc, e.target.value)}
+                                onFocus={(e) => (focused.current = { loc, el: e.currentTarget })}
                                 style={{ ...inputStyle, height: 60, padding: 8, resize: 'vertical' }}
                             />
                         ) : (
@@ -430,12 +537,24 @@ export function LocalizedTextField({ value, onChange, label, locales, multiline 
                                 type="text"
                                 value={map[loc] ?? ''}
                                 onChange={(e) => set(loc, e.target.value)}
+                                onFocus={(e) => (focused.current = { loc, el: e.currentTarget })}
                                 style={inputStyle}
                             />
                         )}
                     </div>
                 ))}
             </div>
+            {/* Per-locale, because each language writes its own sentence and can get its own typo. */}
+            {sample
+                ? locales
+                      .filter((loc) => hasTemplate(map[loc] ?? ''))
+                      .map((loc) => (
+                          <div key={loc} style={{ paddingLeft: locales.length > 1 ? 42 : 0 }}>
+                              <TemplatePreview text={map[loc]!} sample={sample} />
+                          </div>
+                      ))
+                : null}
+            <PlaceholderBar items={discovered} onInsert={insert} />
         </div>
     );
 }
@@ -1294,11 +1413,13 @@ function TemplateInput({ value, onChange, discovered, placeholder }: TemplateInp
         const start = el.selectionStart ?? cur.length;
         const end = el.selectionEnd ?? cur.length;
         onChange(cur.slice(0, start) + token + cur.slice(end));
-        requestAnimationFrame(() => {
+        // A timer, not requestAnimationFrame: frame delivery is a rendering optimisation the
+        // browser can withhold, and the caret would silently stay where it was.
+        const pos = start + token.length;
+        window.setTimeout(() => {
             el.focus();
-            const pos = start + token.length;
             el.setSelectionRange(pos, pos);
-        });
+        }, 0);
     };
     return (
         <div style={{ display: 'grid', gap: 5 }}>
